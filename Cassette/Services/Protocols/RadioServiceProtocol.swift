@@ -8,5 +8,8 @@ import SwiftSonic
 protocol RadioServiceProtocol: AnyObject, Sendable {
     func listStations(forceRefresh: Bool) async throws -> [InternetRadioStation]
     func cachedStations() async -> [InternetRadioStation]?
+    /// Adds Chrasssette's starter Nook radio presets to the active server when missing.
+    /// Requires an admin-capable Subsonic/OpenSubsonic account.
+    func installNookStarterStations() async throws -> [InternetRadioStation]
     func clearCache() async
 }
