@@ -818,7 +818,7 @@ struct PlaylistDetailView: View {
 
             VStack(spacing: CassetteSpacing.l) {
                 VStack(spacing: 0) {
-                    Text(vm?.name ?? initialName)
+                    Text((vm?.name ?? initialName).chrasssetteDisplayName)
                     .font(.cassetteDetailTitle)
                     .foregroundStyle(headerTextColor)
                     .multilineTextAlignment(.center)
