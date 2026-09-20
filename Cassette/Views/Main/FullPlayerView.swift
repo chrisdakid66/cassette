@@ -45,6 +45,7 @@ struct FullPlayerView: View {
     @State private var showLyrics = false
     @State private var surface: PlayerSurface = .player
     @State private var lyricsViewModel: LyricsViewModel?
+    @State private var showVolumeControl = false
     @Namespace private var morphNS
 
     #if os(iOS)
@@ -136,9 +137,17 @@ struct FullPlayerView: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                dominant.opacity(showingQueue ? 0.04 : 0.08)
+                dominant.opacity(showingQueue ? 0.05 : 0.18)
                 if showingQueue {
-                    Color.black.opacity(0.22)
+                    LinearGradient(
+                        colors: [
+                            CassetteColors.chrisflixDeepPurple.opacity(0.62),
+                            CassetteColors.chrisflixPurple.opacity(0.20),
+                            Color.black.opacity(0.42)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 }
             }
             .ignoresSafeArea()
@@ -277,11 +286,7 @@ struct FullPlayerView: View {
                 // Breathing room between scrubber → transport → volume — the `playerControlsSpacing` knob.
                 .padding(.top, Self.playerControlsSpacing)
 
-                if dynamicTypeSize < .accessibility1 {
-                    VolumeSection(contentColor: vm.contentColor, secondaryContentColor: vm.secondaryContentColor)
-                        .padding(.horizontal, CassetteSpacing.l)
-                        .padding(.top, Self.playerControlsSpacing)
-                }
+                // Volume moved to the top-right floating control.
 
                 // Default player: a taller bottom gap shortens the greedy cover and lifts the controls up.
                 flowGap((showLyrics || showingQueue) ? CassetteSpacing.xs : 18)
@@ -298,7 +303,8 @@ struct FullPlayerView: View {
                 isLiveStream: playerState.isLiveStream,
                 secondaryContentColor: vm.secondaryContentColor,
                 accentColor: CassetteColors.accentForeground(on: vm.dominantColor),
-                playerState: playerState
+                playerState: playerState,
+                playerService: container?.playerService
             )
             .padding(.top, CassetteSpacing.s)
             // Fixed bottom margin (NOT a Spacer): a greedy Spacer here would compete with the inner VStack's
@@ -372,8 +378,9 @@ struct FullPlayerView: View {
                                 .clipped()
                             LinearGradient(
                                 stops: [
-                                    .init(color: .clear, location: 0.82),
-                                    .init(color: dominant, location: 1.0),
+                                    .init(color: .clear, location: 0.62),
+                                    .init(color: dominant.opacity(0.70), location: 0.82),
+                                    .init(color: CassetteColors.chrisflixPurpleBlack, location: 1.0),
                                 ],
                                 startPoint: .top, endPoint: .bottom
                             )
@@ -381,7 +388,8 @@ struct FullPlayerView: View {
                         .mask(
                             LinearGradient(
                                 stops: [
-                                    .init(color: .clear, location: 0.84),
+                                    .init(color: .clear, location: 0.60),
+                                    .init(color: .black.opacity(0.76), location: 0.80),
                                     .init(color: .black, location: 1.0),
                                 ],
                                 startPoint: .top, endPoint: .bottom
@@ -434,8 +442,8 @@ struct FullPlayerView: View {
 
             InlineQueueList(
                 playerState: playerState,
-                contentColor: vm.contentColor,
-                secondaryContentColor: vm.secondaryContentColor,
+                contentColor: .white,
+                secondaryContentColor: .white.opacity(0.68),
                 // Only mounted while the queue is shown (no opacity-0 pre-mount), so always load artwork.
                 loadArtwork: true
             )
@@ -443,6 +451,11 @@ struct FullPlayerView: View {
             // cover's luminance so it stays legible in lockstep with the row text on every cover.
             .environment(\.colorScheme, vm.isLightBackground ? .light : .dark)
             .frame(maxWidth: .infinity, minHeight: 120, maxHeight: .infinity)
+            .background(
+                CassetteColors.chrisflixDeepPurple.opacity(0.20),
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .padding(.horizontal, CassetteSpacing.s)
 
             queueStatusLine(playerState)
                 .padding(.horizontal, CassetteSpacing.l)
@@ -607,10 +620,6 @@ struct FullPlayerView: View {
 
     private func queuePills(_ playerState: PlayerState) -> some View {
         HStack(spacing: CassetteSpacing.s) {
-            queuePill(systemImage: "shuffle", isActive: playerState.isShuffled,
-                      label: playerState.isShuffled ? "Shuffle On" : "Shuffle Off") {
-                Task { await container?.playerService.toggleShuffle() }
-            }
             queuePill(systemImage: playerState.repeatMode.systemImage, isActive: playerState.repeatMode != .off,
                       label: "Repeat") {
                 Task { await container?.playerService.setRepeatMode(playerState.repeatMode.next) }
@@ -651,11 +660,11 @@ struct FullPlayerView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text("Up Next")
                 .font(.cassetteSectionTitle)
-                .foregroundStyle(vm.contentColor)
+                .foregroundStyle(surface == .queue ? Color.white : vm.contentColor)
             if let album = playerState.currentTrack?.albumName, !album.isEmpty {
                 Text(album)
                     .font(.cassetteCaption)
-                    .foregroundStyle(vm.secondaryContentColor)
+                    .foregroundStyle(surface == .queue ? Color.white.opacity(0.65) : vm.secondaryContentColor)
                     .lineLimit(1)
             }
         }
@@ -674,7 +683,7 @@ struct FullPlayerView: View {
         if playerState.isAutoExtendEnabled { bits.append("Auto-extend on") }
         return Text(bits.joined(separator: " · "))
             .font(.cassetteCaption)
-            .foregroundStyle(vm.secondaryContentColor)
+            .foregroundStyle(surface == .queue ? Color.white.opacity(0.65) : vm.secondaryContentColor)
             .frame(maxWidth: .infinity, alignment: .leading)
             .lineLimit(1)
     }
@@ -706,38 +715,56 @@ struct FullPlayerView: View {
             )
             .padding(.top, CassetteSpacing.s)
 
-            if dynamicTypeSize < .accessibility1 {
-                VolumeSection(contentColor: vm.contentColor, secondaryContentColor: vm.secondaryContentColor)
-                    .padding(.horizontal, CassetteSpacing.l)
-                    .padding(.top, CassetteSpacing.s)
-            }
-
             BottomToolbar(
                 showLyrics: $showLyrics,
                 surface: $surface,
                 isLiveStream: playerState.isLiveStream,
                 secondaryContentColor: vm.secondaryContentColor,
                 accentColor: CassetteColors.accentForeground(on: vm.dominantColor),
-                playerState: playerState
+                playerState: playerState,
+                playerService: container?.playerService
             )
             .padding(.top, CassetteSpacing.s)
         }
     }
 
     private var topBar: some View {
-        // Grabber doubles as a tap-to-dismiss (animated by the zoom-back) — a guaranteed close affordance
-        // alongside the zoom transition's interactive swipe. A discrete tap, not a drag-translate dismiss.
-        Button {
-            dismiss()
-        } label: {
-            Capsule()
-                .fill(vm.contentColor.opacity(0.4))
-                .frame(width: 36, height: 5)
-                .frame(maxWidth: .infinity, minHeight: 28)
-                .contentShape(Rectangle())
+        ZStack {
+            Button {
+                dismiss()
+            } label: {
+                Capsule()
+                    .fill(vm.contentColor.opacity(0.4))
+                    .frame(width: 36, height: 5)
+                    .frame(maxWidth: .infinity, minHeight: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close player")
+
+            HStack {
+                Spacer()
+                Button {
+                    showVolumeControl.toggle()
+                } label: {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(vm.contentColor)
+                        .frame(width: 40, height: 40)
+                        .background(.black.opacity(0.22), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Volume")
+                .popover(isPresented: $showVolumeControl, arrowEdge: .top) {
+                    VerticalVolumePopover(
+                        contentColor: vm.contentColor,
+                        secondaryContentColor: vm.secondaryContentColor
+                    )
+                    .presentationCompactAdaptation(.popover)
+                }
+            }
+            .padding(.horizontal, CassetteSpacing.l)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Close player")
     }
 
 }
@@ -1159,9 +1186,23 @@ private struct BottomToolbar: View {
     let secondaryContentColor: Color
     let accentColor: Color
     let playerState: PlayerState
+    let playerService: (any PlayerServiceProtocol)?
 
     var body: some View {
-        HStack(spacing: CassetteSpacing.xxxxl) {
+        HStack(spacing: CassetteSpacing.xl) {
+            if !isLiveStream {
+                Button {
+                    HapticFeedback.light.trigger()
+                    Task { await playerService?.toggleShuffle() }
+                } label: {
+                    Image(systemName: "shuffle")
+                        .font(.title3)
+                        .foregroundStyle(playerState.isShuffled ? accentColor : secondaryContentColor)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(playerState.isShuffled ? "Turn Shuffle Off" : "Turn Shuffle On")
+            }
             if !isLiveStream {
                 Button {
                     if surface == .queue { surface = .player }
@@ -1244,27 +1285,39 @@ private struct AirPlayRouteButton: View {
 
 // MARK: - Volume
 
-private struct VolumeSection: View {
+private struct VerticalVolumePopover: View {
     let contentColor: Color
     let secondaryContentColor: Color
 
     var body: some View {
-        #if os(iOS)
-        HStack(spacing: CassetteSpacing.m) {
-            Image(systemName: "speaker.fill")
-                .font(.caption)
-                .foregroundStyle(secondaryContentColor)
-                .frame(width: 20)
-                .accessibilityHidden(true)
-
-            SystemVolumeView(contentColor: contentColor)
-
+        VStack(spacing: 10) {
             Image(systemName: "speaker.wave.3.fill")
                 .font(.caption)
                 .foregroundStyle(secondaryContentColor)
-                .frame(width: 20)
-                .accessibilityHidden(true)
+
+            #if os(iOS)
+            SystemVolumeView(contentColor: contentColor)
+                .frame(width: 150, height: 32)
+                .rotationEffect(.degrees(-90))
+                .frame(width: 42, height: 150)
+            #endif
+
+            Image(systemName: "speaker.fill")
+                .font(.caption)
+                .foregroundStyle(secondaryContentColor)
         }
-        #endif
+        .padding(.horizontal, 14)
+        .padding(.vertical, 16)
+        .background(
+            LinearGradient(
+                colors: [
+                    CassetteColors.chrisflixDeepPurple.opacity(0.96),
+                    Color.black.opacity(0.94)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .preferredColorScheme(.dark)
     }
 }
