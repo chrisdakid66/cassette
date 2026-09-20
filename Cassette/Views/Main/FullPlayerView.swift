@@ -126,10 +126,19 @@ struct FullPlayerView: View {
             // into this flat colour exactly like the album/playlist heroes.
             ZStack {
                 Color.black
-                dominant
+                CassetteColors.chrisflixPurpleBlack.opacity(0.92)
+                LinearGradient(
+                    colors: [
+                        CassetteColors.chrisflixDeepPurple.opacity(0.28),
+                        CassetteColors.chrisflixPurpleBlack.opacity(0.72),
+                        Color.black.opacity(0.96)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                dominant.opacity(showingQueue ? 0.04 : 0.08)
                 if showingQueue {
-                    Color.black.opacity(0.58)
-                    CassetteColors.chrisflixPurpleBlack.opacity(0.34)
+                    Color.black.opacity(0.22)
                 }
             }
             .ignoresSafeArea()
