@@ -1,0 +1,64 @@
+name: Chrisflix Dev IPA
+
+on:
+  push:
+    branches: [chrisflix-v0.1]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  APP_NAME: Cassette
+  SCHEME: Cassette
+  PROJECT: Cassette.xcodeproj
+
+jobs:
+  build-ios:
+    name: Build unsigned iOS IPA
+    runs-on: macos-26
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Cache resolved Swift packages
+        uses: actions/cache@v4
+        with:
+          path: .spm
+          key: spm-${{ runner.os }}-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Build unsigned archive
+        run: |
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/$APP_NAME-iOS.xcarchive" \
+            -clonedSourcePackagesDirPath .spm \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            archive
+
+      - name: Package unsigned IPA
+        run: |
+          cd "$RUNNER_TEMP"
+          rm -rf Payload
+          mkdir Payload
+          cp -R "$APP_NAME-iOS.xcarchive/Products/Applications/$APP_NAME.app" Payload/
+          zip -qry "ChrisflixMusic-dev.ipa" Payload
+          rm -rf Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChrisflixMusic-dev-${{ github.run_number }}
+          path: ${{ runner.temp }}/ChrisflixMusic-dev.ipa
+          retention-days: 14
