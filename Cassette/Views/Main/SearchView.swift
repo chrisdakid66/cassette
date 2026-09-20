@@ -637,6 +637,7 @@ struct SearchView: View {
                     }
                 }
             }
+            .opacity(0.90)
         }
     }
 
