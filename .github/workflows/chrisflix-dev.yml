@@ -1,8 +1,8 @@
-name: Chrisflix Dev IPA
+name: Chrasssette Dev IPA
 
 on:
   push:
-    branches: [chrisflix-v0.1]
+    branches: [chrisflix-v0.1, chrasssette-v0.2]
   workflow_dispatch: {}
 
 permissions:
@@ -53,12 +53,12 @@ jobs:
           rm -rf Payload
           mkdir Payload
           cp -R "$APP_NAME-iOS.xcarchive/Products/Applications/$APP_NAME.app" Payload/
-          zip -qry "ChrisflixMusic-dev.ipa" Payload
+          zip -qry "Chrasssette-dev.ipa" Payload
           rm -rf Payload
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ChrisflixMusic-dev-${{ github.run_number }}
-          path: ${{ runner.temp }}/ChrisflixMusic-dev.ipa
+          name: Chrasssette-dev-${{ github.run_number }}
+          path: ${{ runner.temp }}/Chrasssette-dev.ipa
           retention-days: 14
