@@ -6,12 +6,36 @@ import SwiftUI
 import SwiftSonic
 import OSLog
 
+private enum NookRoomScene: Int, CaseIterable, Identifiable {
+    case books
+    case fireplace
+    case podcasts
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .books: return "Books"
+        case .fireplace: return "Fireside"
+        case .podcasts: return "Podcasts"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .books: return "books.vertical.fill"
+        case .fireplace: return "flame.fill"
+        case .podcasts: return "mic.fill"
+        }
+    }
+}
+
 struct NookView: View {
     @Environment(\.appContainer) private var container
     @Environment(\.openURL) private var openURL
 
     @AppStorage("chrasssette.nook.jellyfinURL") private var jellyfinURL = ""
-    @AppStorage("chrasssette.nook.cashAppURL") private var cashAppURL = ""
+    @AppStorage("chrasssette.nook.cashAppURL") private var cashAppURL = "https://cash.app/$PadreIgnant"
 
     @State private var audiobookAlbums: [AlbumID3] = []
     @State private var podcastAlbums: [AlbumID3] = []
@@ -22,36 +46,31 @@ struct NookView: View {
     @State private var isLoadingAlbums = false
     @State private var isLoadingPodcasts = false
     @State private var isLoadingRadio = false
-    @State private var loadError: String?
+    @State private var isInstallingStarterStations = false
 
     @StateObject private var weather = NookWeatherModel()
-    @State private var showRadioPicker = false
     @State private var showNookLinks = false
+    @State private var showExpandedRoom = false
     @State private var afterDark = false
+    @State private var selectedRadioName = "Nook Study"
 
-    private let cardWidth: CGFloat = 150
-
-    private var isInitialLoading: Bool {
-        (isLoadingAlbums || isLoadingPodcasts) &&
-        audiobookAlbums.isEmpty &&
-        podcastAlbums.isEmpty &&
-        podcastChannels.isEmpty &&
-        newestEpisodes.isEmpty
+    private var selectedRadioStation: InternetRadioStation? {
+        radioStations.first { $0.name.caseInsensitiveCompare(selectedRadioName) == .orderedSame }
+        ?? radioStations.first { $0.name.localizedCaseInsensitiveContains("study") }
+        ?? radioStations.first { $0.name.localizedCaseInsensitiveContains("lofi") }
+        ?? radioStations.first { $0.name.localizedCaseInsensitiveContains("lo-fi") }
+        ?? radioStations.first
     }
 
-    private var preferredLofiStation: InternetRadioStation? {
-        let needles = ["lofi", "lo-fi", "study", "chill"]
-        return radioStations.first { station in
-            let name = station.name.lowercased()
-            return needles.contains { name.contains($0) }
-        }
-    }
-
-    private var isPreferredRadioPlaying: Bool {
-        guard let preferredLofiStation,
-              container?.playerState.currentRadio?.id == preferredLofiStation.id
+    private var selectedRadioIsPlaying: Bool {
+        guard let selectedRadioStation,
+              container?.playerState.currentRadio?.id == selectedRadioStation.id
         else { return false }
         return container?.playerState.playbackState == .playing
+    }
+
+    private var hasNookStarterStations: Bool {
+        radioStations.contains { $0.name.hasPrefix("Nook ") }
     }
 
     var body: some View {
@@ -75,31 +94,18 @@ struct NookView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
                     nookHeader
-                    cozyHero
+                    minimizedNook
 
-                    if isInitialLoading {
+                    if isLoadingAlbums || isLoadingPodcasts || isLoadingRadio {
                         HStack {
                             Spacer()
                             LongCatLoader(label: "Warming the Nook…")
                             Spacer()
                         }
-                        .padding(.vertical, 40)
-                    } else {
-                        if !newestEpisodes.isEmpty {
-                            latestEpisodesSection
-                        }
-
-                        audiobookSection
-                        podcastSection
-                        musicVideosSection
+                        .padding(.vertical, 18)
                     }
 
-                    if let loadError {
-                        Text(loadError)
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.48))
-                            .padding(.bottom, CassetteSpacing.l)
-                    }
+                    musicVideosSection
                 }
                 .padding(.horizontal, CassetteSpacing.l)
                 .padding(.top, CassetteSpacing.m)
@@ -113,20 +119,9 @@ struct NookView: View {
             async let podcasts: Void = loadPodcasts()
             async let radios: Void = loadRadioStations()
             _ = await (albums, podcasts, radios)
-            updateEmptyMessage()
         }
         .task {
             weather.refresh()
-        }
-        .sheet(isPresented: $showRadioPicker) {
-            NavigationStack {
-                RadioListView()
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Done") { showRadioPicker = false }
-                        }
-                    }
-            }
         }
         .sheet(isPresented: $showNookLinks) {
             NavigationStack {
@@ -136,6 +131,28 @@ struct NookView: View {
                             Button("Done") { showNookLinks = false }
                         }
                     }
+            }
+        }
+        .fullScreenCover(isPresented: $showExpandedRoom) {
+            NavigationStack {
+                NookExpandedRoomView(
+                    audiobookAlbums: audiobookAlbums,
+                    podcastAlbums: podcastAlbums,
+                    podcastChannels: podcastChannels,
+                    newestEpisodes: newestEpisodes,
+                    radioStations: radioStations,
+                    selectedRadioName: $selectedRadioName,
+                    afterDark: $afterDark,
+                    weather: weather,
+                    cashAppURL: cashAppURL,
+                    isInstallingStarterStations: isInstallingStarterStations,
+                    hasStarterStations: hasNookStarterStations,
+                    onClose: { showExpandedRoom = false },
+                    onPlayRadio: playRadio,
+                    onInstallStarterStations: installStarterRadioStations,
+                    onTipJarTap: openTipJar,
+                    onToggleAfterDark: toggleAfterDark
+                )
             }
         }
     }
@@ -170,51 +187,50 @@ struct NookView: View {
         .animation(.easeInOut(duration: 0.28), value: afterDark)
     }
 
-    private var cozyHero: some View {
-        ZStack(alignment: .top) {
+    private var minimizedNook: some View {
+        ZStack(alignment: .bottom) {
             NookFireplaceScene(
                 afterDark: afterDark,
-                isRadioPlaying: isPreferredRadioPlaying,
-                hasLofiStation: preferredLofiStation != nil,
-                onRadioTap: handleRadioTap,
+                isRadioPlaying: selectedRadioIsPlaying,
+                hasRadioStation: selectedRadioStation != nil,
+                onRadioTap: handleMinimizedRadioTap,
+                onTipJarTap: openTipJar,
                 onSecretToggle: toggleAfterDark
             )
             .frame(maxWidth: .infinity)
-            .frame(height: 286)
+            .frame(height: 300)
 
-            HStack(alignment: .top, spacing: CassetteSpacing.s) {
-                fireplaceTipButton
-                Spacer()
-                weatherCard
+            weatherCard
+                .frame(maxWidth: .infinity, alignment: .topTrailing)
+                .padding(12)
+                .frame(maxHeight: .infinity, alignment: .top)
+
+            Button {
+                showExpandedRoom = true
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.caption.bold())
+                    Text("Enter the Nook")
+                        .font(.caption.weight(.bold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(.black.opacity(0.48), in: Capsule())
+                .overlay {
+                    Capsule()
+                        .strokeBorder(
+                            (afterDark ? CassetteColors.chrisflixPurple : Color.orange).opacity(0.34),
+                            lineWidth: 0.8
+                        )
+                }
+                .shadow(color: .black.opacity(0.30), radius: 8, y: 3)
             }
-            .padding(12)
+            .buttonStyle(.plain)
+            .padding(.bottom, 10)
         }
         .frame(maxWidth: .infinity)
-    }
-
-    private var fireplaceTipButton: some View {
-        Button {
-            if let url = normalizedURL(cashAppURL) {
-                openURL(url)
-            } else {
-                showNookLinks = true
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "heart.fill")
-                    .font(.caption)
-                Text(cashAppURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Tip Jar" : "Tip the server")
-                    .font(.caption.weight(.bold))
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(.black.opacity(0.42), in: Capsule())
-            .overlay {
-                Capsule().strokeBorder(Color.orange.opacity(0.30), lineWidth: 0.7)
-            }
-        }
-        .buttonStyle(.plain)
     }
 
     private var weatherCard: some View {
@@ -246,157 +262,6 @@ struct NookView: View {
             }
         }
         .buttonStyle(.plain)
-    }
-
-    private var latestEpisodesSection: some View {
-        VStack(alignment: .leading, spacing: CassetteSpacing.s) {
-            Text("Latest Episodes")
-                .font(.cassetteSectionTitle)
-                .foregroundStyle(.white)
-
-            VStack(spacing: 0) {
-                ForEach(Array(newestEpisodes.prefix(5)), id: \.id) { episode in
-                    Button {
-                        playPodcastEpisode(episode, channelTitle: channelTitle(for: episode.channelId))
-                    } label: {
-                        HStack(spacing: CassetteSpacing.m) {
-                            nookArtwork(id: episode.coverArt, size: 54)
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(episode.title)
-                                    .font(.headline)
-                                    .foregroundStyle(.white)
-                                    .lineLimit(2)
-
-                                HStack(spacing: 6) {
-                                    Text(channelTitle(for: episode.channelId))
-                                    if let date = episode.publishDate {
-                                        Text("•")
-                                        Text(date.formatted(date: .abbreviated, time: .omitted))
-                                    }
-                                }
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.58))
-                                .lineLimit(1)
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "play.fill")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(CassetteColors.chrisflixPurple)
-                        }
-                        .padding(.vertical, CassetteSpacing.s)
-                    }
-                    .buttonStyle(.plain)
-
-                    if episode.id != newestEpisodes.prefix(5).last?.id {
-                        Divider().overlay(.white.opacity(0.08))
-                    }
-                }
-            }
-            .padding(.horizontal, CassetteSpacing.m)
-            .background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        }
-    }
-
-    private var audiobookSection: some View {
-        VStack(alignment: .leading, spacing: CassetteSpacing.s) {
-            HStack {
-                Text("Audiobooks")
-                    .font(.cassetteSectionTitle)
-                    .foregroundStyle(.white)
-                Spacer()
-                if isLoadingAlbums {
-                    ProgressView().controlSize(.small).tint(.white.opacity(0.6))
-                } else {
-                    Image(systemName: "books.vertical.fill")
-                        .foregroundStyle(.white.opacity(0.45))
-                }
-            }
-
-            if audiobookAlbums.isEmpty {
-                nookEmptyCard(
-                    title: "No audiobooks found yet",
-                    subtitle: "Albums tagged Audiobook, Audio Book, or Spoken Word will appear here.",
-                    systemImage: "book.closed"
-                )
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: CassetteSpacing.m) {
-                        ForEach(audiobookAlbums) { album in
-                            NavigationLink {
-                                AlbumDetailView(album: album)
-                            } label: {
-                                nookAlbumCard(album)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var podcastSection: some View {
-        VStack(alignment: .leading, spacing: CassetteSpacing.s) {
-            HStack {
-                Text("Podcasts")
-                    .font(.cassetteSectionTitle)
-                    .foregroundStyle(.white)
-                Spacer()
-                if isLoadingPodcasts {
-                    ProgressView().controlSize(.small).tint(.white.opacity(0.6))
-                } else {
-                    Image(systemName: "mic.fill")
-                        .foregroundStyle(.white.opacity(0.45))
-                }
-            }
-
-            if !podcastChannels.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: CassetteSpacing.m) {
-                        ForEach(podcastChannels, id: \.id) { channel in
-                            NavigationLink {
-                                NookPodcastChannelView(channel: channel)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 7) {
-                                    nookArtwork(id: channel.coverArt, size: cardWidth)
-                                    Text(channel.title)
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.white)
-                                        .lineLimit(2)
-                                        .frame(width: cardWidth, alignment: .leading)
-                                    Text("\(channel.episode.count) episode\(channel.episode.count == 1 ? "" : "s")")
-                                        .font(.caption)
-                                        .foregroundStyle(.white.opacity(0.55))
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            } else if !podcastAlbums.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: CassetteSpacing.m) {
-                        ForEach(podcastAlbums) { album in
-                            NavigationLink {
-                                AlbumDetailView(album: album)
-                            } label: {
-                                nookAlbumCard(album)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            } else {
-                nookEmptyCard(
-                    title: "No podcasts found yet",
-                    subtitle: "Server podcasts or albums tagged Podcast will appear here.",
-                    systemImage: "mic"
-                )
-            }
-        }
     }
 
     private var musicVideosSection: some View {
@@ -466,78 +331,18 @@ struct NookView: View {
         }
     }
 
-    private func nookAlbumCard(_ album: AlbumID3) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            CoverArtView(id: album.coverArt ?? album.id, size: 320)
-                .frame(width: cardWidth, height: cardWidth)
-                .cassetteCoverStyle(cornerRadius: CassetteCornerRadius.standard)
-
-            Text(album.name)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                .lineLimit(2)
-                .frame(width: cardWidth, alignment: .leading)
-
-            Text(album.artist ?? album.genre ?? "")
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.55))
-                .lineLimit(1)
-                .frame(width: cardWidth, alignment: .leading)
-        }
-    }
-
-    @ViewBuilder
-    private func nookArtwork(id: String?, size: CGFloat) -> some View {
-        if let id, !id.isEmpty {
-            CoverArtView(id: id, size: Int(size * 2))
-                .frame(width: size, height: size)
-                .cassetteCoverStyle(cornerRadius: 12)
-        } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(CassetteColors.chrisflixDeepPurple.opacity(0.55))
-                Image(systemName: "headphones")
-                    .font(.title2)
-                    .foregroundStyle(.white.opacity(0.72))
-            }
-            .frame(width: size, height: size)
-        }
-    }
-
-    private func nookEmptyCard(title: String, subtitle: String, systemImage: String) -> some View {
-        HStack(spacing: CassetteSpacing.m) {
-            Image(systemName: systemImage)
-                .font(.title2)
-                .foregroundStyle(CassetteColors.chrisflixPurple)
-                .frame(width: 38)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.55))
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(CassetteSpacing.m)
-        .background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    }
-
-    private func channelTitle(for channelId: String) -> String {
-        podcastChannels.first(where: { $0.id == channelId })?.title ?? "Podcast"
-    }
-
-    private func handleRadioTap() {
-        guard let container else { return }
-
-        guard let station = preferredLofiStation else {
-            showRadioPicker = true
+    private func handleMinimizedRadioTap() {
+        guard let station = selectedRadioStation else {
+            showExpandedRoom = true
             return
         }
+        playRadio(station)
+    }
 
+    private func playRadio(_ station: InternetRadioStation) {
+        guard let container else { return }
+
+        selectedRadioName = station.name
         Task {
             do {
                 if container.playerState.currentRadio?.id == station.id {
@@ -550,9 +355,40 @@ struct NookView: View {
                     try await container.playerService.playRadio(station)
                 }
             } catch {
-                container.toastService.showError("Unable to play Lo-fi Radio.")
+                container.toastService.showError("Unable to play this Nook station.")
                 Logger.player.error("[NOOK-RADIO] play failed: \(error, privacy: .public)")
             }
+        }
+    }
+
+    private func installStarterRadioStations() {
+        guard let service = container?.radioService, !isInstallingStarterStations else { return }
+        isInstallingStarterStations = true
+
+        Task {
+            do {
+                let installed = try await service.installNookStarterStations()
+                await MainActor.run {
+                    radioStations = installed
+                    isInstallingStarterStations = false
+                    selectedRadioName = "Nook Study"
+                    container?.toastService.show("Nook radio stations added.", style: .success)
+                }
+            } catch {
+                await MainActor.run {
+                    isInstallingStarterStations = false
+                    container?.toastService.showError("Couldn’t add the starter stations. The active server account may need admin access.")
+                }
+                Logger.radio.error("[NOOK-RADIO] starter install failed: \(error, privacy: .public)")
+            }
+        }
+    }
+
+    private func openTipJar() {
+        if let url = normalizedURL(cashAppURL) {
+            openURL(url)
+        } else {
+            showNookLinks = true
         }
     }
 
@@ -572,38 +408,6 @@ struct NookView: View {
         return URL(string: "https://" + trimmed)
     }
 
-    private func playPodcastEpisode(_ episode: PodcastEpisode, channelTitle: String) {
-        guard let container else { return }
-        let song = DisplayableSong(
-            id: episode.streamId ?? episode.id,
-            title: episode.title,
-            artist: channelTitle,
-            albumId: nil,
-            albumName: channelTitle,
-            artistId: nil,
-            genre: "Podcast",
-            duration: TimeInterval(episode.duration ?? 0),
-            trackNumber: nil,
-            isDownloaded: false,
-            coverArtId: episode.coverArt,
-            audioFormat: episode.suffix?.uppercased(),
-            replayGainTrackGain: nil,
-            replayGainTrackPeak: nil,
-            replayGainAlbumGain: nil,
-            replayGainAlbumPeak: nil,
-            replayGainBaseGain: nil,
-            replayGainFallbackGain: nil
-        )
-
-        Task {
-            do {
-                try await container.playerService.play(tracks: [song], startIndex: 0)
-            } catch {
-                Logger.player.error("Podcast playback failed: \(error, privacy: .public)")
-            }
-        }
-    }
-
     @MainActor
     private func loadAlbums() async {
         guard let library = container?.libraryService else { return }
@@ -611,17 +415,13 @@ struct NookView: View {
         defer { isLoadingAlbums = false }
 
         let albums = (try? await library.allAlbums()) ?? []
-
         audiobookAlbums = albums.filter { album in
             let genre = (album.genre ?? "").lowercased()
             return genre.contains("audiobook") ||
                 genre.contains("audio book") ||
                 genre.contains("spoken word")
         }
-
-        podcastAlbums = albums.filter { album in
-            (album.genre ?? "").lowercased().contains("podcast")
-        }
+        podcastAlbums = albums.filter { ($0.genre ?? "").lowercased().contains("podcast") }
     }
 
     @MainActor
@@ -641,25 +441,481 @@ struct NookView: View {
         guard let service = container?.radioService else { return }
         isLoadingRadio = true
         defer { isLoadingRadio = false }
-
         radioStations = (try? await service.listStations(forceRefresh: false)) ?? []
     }
+}
 
-    @MainActor
-    private func updateEmptyMessage() {
-        if audiobookAlbums.isEmpty && podcastAlbums.isEmpty && podcastChannels.isEmpty {
-            loadError = "The Nook is ready. Add audiobook/podcast tags or a server podcast feed and they’ll appear here."
-        } else {
-            loadError = nil
+private struct NookExpandedRoomView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let audiobookAlbums: [AlbumID3]
+    let podcastAlbums: [AlbumID3]
+    let podcastChannels: [PodcastChannel]
+    let newestEpisodes: [PodcastEpisode]
+    let radioStations: [InternetRadioStation]
+
+    @Binding var selectedRadioName: String
+    @Binding var afterDark: Bool
+    @ObservedObject var weather: NookWeatherModel
+
+    let cashAppURL: String
+    let isInstallingStarterStations: Bool
+    let hasStarterStations: Bool
+
+    let onClose: () -> Void
+    let onPlayRadio: (InternetRadioStation) -> Void
+    let onInstallStarterStations: () -> Void
+    let onTipJarTap: () -> Void
+    let onToggleAfterDark: () -> Void
+
+    @State private var selectedScene: NookRoomScene = .fireplace
+
+    private var nookStations: [InternetRadioStation] {
+        let preferredOrder = ["Nook Study", "Nook Café", "Nook Rain", "Nook Late Night"]
+        let matches = radioStations.filter { $0.name.hasPrefix("Nook ") }
+        return matches.sorted {
+            (preferredOrder.firstIndex(of: $0.name) ?? 999) < (preferredOrder.firstIndex(of: $1.name) ?? 999)
         }
+    }
+
+    private var selectedStation: InternetRadioStation? {
+        radioStations.first { $0.name.caseInsensitiveCompare(selectedRadioName) == .orderedSame }
+    }
+
+    private var isSelectedPlaying: Bool {
+        // Visual state is intentionally conservative in expanded mode; the mini player remains
+        // the source of truth for exact playback state.
+        selectedStation != nil
+    }
+
+    var body: some View {
+        ZStack {
+            AnimatedAmbientBackground(warm: true)
+
+            if afterDark {
+                Color.black.opacity(0.34).ignoresSafeArea()
+            }
+
+            VStack(spacing: 0) {
+                expandedTopBar
+
+                TabView(selection: $selectedScene) {
+                    audiobookRoom
+                        .tag(NookRoomScene.books)
+                    fireplaceRoom
+                        .tag(NookRoomScene.fireplace)
+                    podcastRoom
+                        .tag(NookRoomScene.podcasts)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+
+                scenePicker
+                    .padding(.bottom, 18)
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var expandedTopBar: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(afterDark ? "Nook After Dark" : "The Nook")
+                    .font(.title2.bold())
+                Text(selectedScene.title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                onClose()
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.body.bold())
+                    .frame(width: 36, height: 36)
+                    .background(.black.opacity(0.42), in: Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, CassetteSpacing.l)
+        .padding(.top, 14)
+        .padding(.bottom, 8)
+    }
+
+    private var scenePicker: some View {
+        HStack(spacing: 8) {
+            ForEach(NookRoomScene.allCases) { scene in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.22)) {
+                        selectedScene = scene
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: scene.symbol)
+                        if selectedScene == scene {
+                            Text(scene.title)
+                                .font(.caption.weight(.semibold))
+                        }
+                    }
+                    .foregroundStyle(selectedScene == scene ? .white : .white.opacity(0.58))
+                    .padding(.horizontal, selectedScene == scene ? 13 : 11)
+                    .padding(.vertical, 9)
+                    .background(
+                        selectedScene == scene
+                            ? (afterDark ? CassetteColors.chrisflixPurple.opacity(0.34) : Color.orange.opacity(0.24))
+                            : Color.white.opacity(0.05),
+                        in: Capsule()
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(6)
+        .background(.black.opacity(0.34), in: Capsule())
+    }
+
+    private var fireplaceRoom: some View {
+        GeometryReader { geo in
+            VStack(spacing: 16) {
+                ZStack(alignment: .topTrailing) {
+                    NookFireplaceScene(
+                        afterDark: afterDark,
+                        isRadioPlaying: isSelectedPlaying,
+                        hasRadioStation: selectedStation != nil,
+                        onRadioTap: {
+                            if let station = selectedStation {
+                                onPlayRadio(station)
+                            }
+                        },
+                        onTipJarTap: onTipJarTap,
+                        onSecretToggle: onToggleAfterDark
+                    )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: min(geo.size.height * 0.70, 590))
+
+                    VStack(alignment: .trailing, spacing: 8) {
+                        HStack(spacing: 6) {
+                            Image(systemName: weather.snapshot?.symbol ?? "location.fill")
+                            if let snap = weather.snapshot {
+                                Text("\(snap.temperature)\(snap.unit)")
+                            } else {
+                                Text(weather.statusText)
+                            }
+                        }
+                        .font(.caption.bold())
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 8)
+                        .background(.black.opacity(0.46), in: Capsule())
+
+                        if !hasStarterStations {
+                            Button(action: onInstallStarterStations) {
+                                HStack(spacing: 6) {
+                                    if isInstallingStarterStations {
+                                        ProgressView().controlSize(.mini).tint(.white)
+                                    } else {
+                                        Image(systemName: "radio.fill")
+                                    }
+                                    Text("Add starter stations")
+                                }
+                                .font(.caption.bold())
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 11)
+                                .padding(.vertical, 8)
+                                .background(CassetteColors.chrisflixPurple.opacity(0.52), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isInstallingStarterStations)
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .padding(14)
+                }
+
+                if !nookStations.isEmpty {
+                    radioPresetPicker
+                } else {
+                    Text("Add the four starter stations to unlock Study, Café, Rain, and Late Night.")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.56))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, CassetteSpacing.l)
+        }
+    }
+
+    private var radioPresetPicker: some View {
+        HStack(spacing: 8) {
+            ForEach(nookStations, id: \.id) { station in
+                Button {
+                    selectedRadioName = station.name
+                    onPlayRadio(station)
+                } label: {
+                    VStack(spacing: 5) {
+                        Image(systemName: radioSymbol(for: station.name))
+                            .font(.body)
+                        Text(displayRadioName(station.name))
+                            .font(.caption2.weight(.semibold))
+                    }
+                    .foregroundStyle(selectedRadioName == station.name ? .white : .white.opacity(0.62))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+                    .background(
+                        selectedRadioName == station.name
+                            ? (afterDark ? CassetteColors.chrisflixPurple.opacity(0.34) : Color.orange.opacity(0.24))
+                            : Color.white.opacity(0.04),
+                        in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private var audiobookRoom: some View {
+        GeometryReader { geo in
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.12, green: 0.07, blue: 0.09),
+                        Color(red: 0.055, green: 0.035, blue: 0.06),
+                        .black
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+
+                VStack(spacing: 18) {
+                    HStack(alignment: .bottom) {
+                        Image(systemName: "lamp.desk.fill")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.orange.opacity(0.84))
+                            .shadow(color: .orange.opacity(0.42), radius: 18)
+                        Spacer()
+                        Text("Audiobook Corner")
+                            .font(.title2.bold())
+                            .foregroundStyle(.white)
+                    }
+
+                    Spacer()
+
+                    bookshelfScene
+                        .frame(height: min(geo.size.height * 0.66, 500))
+
+                    Text(audiobookAlbums.isEmpty
+                         ? "Tag an album Audiobook, Audio Book, or Spoken Word and it will land on these shelves."
+                         : "Tap a cover on the shelf to open your audiobook.")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.54))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                .padding(CassetteSpacing.l)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .padding(.horizontal, CassetteSpacing.l)
+            .padding(.vertical, 10)
+        }
+    }
+
+    private var bookshelfScene: some View {
+        VStack(spacing: 0) {
+            ForEach(0..<3, id: \.self) { shelf in
+                HStack(alignment: .bottom, spacing: 8) {
+                    let start = shelf * 4
+                    ForEach(0..<4, id: \.self) { slot in
+                        let index = start + slot
+                        if audiobookAlbums.indices.contains(index) {
+                            let album = audiobookAlbums[index]
+                            NavigationLink {
+                                AlbumDetailView(album: album)
+                            } label: {
+                                CoverArtView(id: album.coverArt ?? album.id, size: 220)
+                                    .frame(width: 62, height: 92)
+                                    .cassetteCoverStyle(cornerRadius: 6)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill([
+                                    Color(red: 0.50, green: 0.20, blue: 0.15),
+                                    Color.orange.opacity(0.58),
+                                    CassetteColors.chrisflixPurple.opacity(0.52),
+                                    Color(red: 0.19, green: 0.33, blue: 0.30)
+                                ][slot])
+                                .frame(width: 32 + CGFloat(slot % 2) * 5, height: 70 + CGFloat((slot + shelf) % 3) * 13)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .background(Color.black.opacity(0.16))
+
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(red: 0.26, green: 0.14, blue: 0.10))
+                    .frame(height: 13)
+            }
+        }
+        .padding(10)
+        .background(
+            LinearGradient(
+                colors: [Color(red: 0.20, green: 0.105, blue: 0.075), Color(red: 0.10, green: 0.06, blue: 0.055)],
+                startPoint: .top,
+                endPoint: .bottom
+            ),
+            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .strokeBorder(Color.orange.opacity(0.14), lineWidth: 1)
+        }
+    }
+
+    private var podcastRoom: some View {
+        GeometryReader { geo in
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.07, green: 0.055, blue: 0.10),
+                        Color(red: 0.045, green: 0.03, blue: 0.055),
+                        .black
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+
+                VStack(spacing: 18) {
+                    HStack {
+                        Text("Podcast Table")
+                            .font(.title2.bold())
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Image(systemName: "waveform")
+                            .foregroundStyle(CassetteColors.chrisflixPurple)
+                    }
+
+                    Spacer()
+
+                    ZStack(alignment: .top) {
+                        Ellipse()
+                            .fill(Color.black.opacity(0.28))
+                            .frame(width: 290, height: 90)
+                            .offset(y: 86)
+
+                        RoundedRectangle(cornerRadius: 42, style: .continuous)
+                            .fill(Color(red: 0.24, green: 0.14, blue: 0.10))
+                            .frame(width: 310, height: 145)
+                            .shadow(color: .black.opacity(0.40), radius: 18, y: 12)
+
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 66, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.82))
+                            .shadow(color: CassetteColors.chrisflixPurple.opacity(0.50), radius: 18)
+                            .offset(x: -72, y: -38)
+
+                        ZStack {
+                            Circle()
+                                .fill(Color(red: 0.82, green: 0.78, blue: 0.69))
+                                .frame(width: 68, height: 68)
+                            Circle()
+                                .strokeBorder(Color.black.opacity(0.25), lineWidth: 4)
+                                .frame(width: 52, height: 52)
+                            Image(systemName: "cup.and.saucer.fill")
+                                .foregroundStyle(Color(red: 0.28, green: 0.16, blue: 0.12))
+                        }
+                        .offset(x: 82, y: 36)
+                    }
+                    .frame(height: min(geo.size.height * 0.40, 300))
+
+                    podcastShelf
+
+                    Spacer()
+                }
+                .padding(CassetteSpacing.l)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .padding(.horizontal, CassetteSpacing.l)
+            .padding(.vertical, 10)
+        }
+    }
+
+    @ViewBuilder
+    private var podcastShelf: some View {
+        if !newestEpisodes.isEmpty {
+            VStack(spacing: 8) {
+                ForEach(Array(newestEpisodes.prefix(3)), id: \.id) { episode in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(episode.title)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                            Text(channelTitle(for: episode.channelId))
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.52))
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                        Image(systemName: "play.circle.fill")
+                            .foregroundStyle(CassetteColors.chrisflixPurple)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+        } else if !podcastChannels.isEmpty {
+            HStack {
+                Image(systemName: "mic.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(CassetteColors.chrisflixPurple)
+                Text("\(podcastChannels.count) podcast channel\(podcastChannels.count == 1 ? "" : "s") ready in the Nook")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.62))
+                Spacer()
+            }
+            .padding(12)
+            .background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        } else {
+            Text("Add a server podcast feed or tag an album Podcast and it will show up on the coffee table.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.54))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+        }
+    }
+
+    private func channelTitle(for channelId: String) -> String {
+        podcastChannels.first(where: { $0.id == channelId })?.title ?? "Podcast"
+    }
+
+    private func displayRadioName(_ name: String) -> String {
+        name.replacingOccurrences(of: "Nook ", with: "")
+    }
+
+    private func radioSymbol(for name: String) -> String {
+        let lowered = name.lowercased()
+        if lowered.contains("café") || lowered.contains("cafe") { return "cup.and.saucer.fill" }
+        if lowered.contains("rain") { return "cloud.rain.fill" }
+        if lowered.contains("late") { return "moon.stars.fill" }
+        return "books.vertical.fill"
     }
 }
 
 private struct NookFireplaceScene: View {
     let afterDark: Bool
     let isRadioPlaying: Bool
-    let hasLofiStation: Bool
+    let hasRadioStation: Bool
     let onRadioTap: () -> Void
+    let onTipJarTap: () -> Void
     let onSecretToggle: () -> Void
 
     @State private var flicker = false
@@ -688,20 +944,24 @@ private struct NookFireplaceScene: View {
                 )
 
             rainyWindow
-                .offset(x: -92, y: -63)
+                .offset(x: -92, y: -65)
 
             bookshelf
-                .offset(x: 99, y: -50)
+                .offset(x: 103, y: -50)
 
             fireplace
-                .offset(y: 28)
+                .offset(y: 29)
+
+            // Both props sit directly on the mantel now.
+            tipJar
+                .offset(x: -58, y: -24)
 
             radio
-                .offset(x: 55, y: -43)
+                .offset(x: 58, y: -24)
 
             if afterDark {
                 sleepingCat
-                    .offset(x: -86, y: 90)
+                    .offset(x: -83, y: 93)
                     .transition(.scale.combined(with: .opacity))
             }
 
@@ -711,19 +971,6 @@ private struct NookFireplaceScene: View {
                 .blur(radius: 34)
                 .offset(y: 70)
                 .allowsHitTesting(false)
-
-            VStack {
-                Spacer()
-                Text(hasLofiStation
-                     ? (isRadioPlaying ? "♪ Lo-fi radio is playing" : "Tap the mantel radio")
-                     : "Tap the radio to choose a station")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.52))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.black.opacity(0.28), in: Capsule())
-                    .padding(.bottom, 10)
-            }
         }
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay {
@@ -843,6 +1090,12 @@ private struct NookFireplaceScene: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color(red: 0.29, green: 0.18, blue: 0.13))
                     .frame(width: 70, height: 42)
+                    .shadow(color: .black.opacity(0.28), radius: 3, y: 2)
+
+                Capsule()
+                    .fill(Color.black.opacity(0.25))
+                    .frame(width: 58, height: 4)
+                    .offset(y: 20)
 
                 Circle()
                     .strokeBorder((afterDark ? CassetteColors.chrisflixPurple : Color.orange).opacity(0.78), lineWidth: 2)
@@ -863,24 +1116,94 @@ private struct NookFireplaceScene: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isRadioPlaying ? "Pause Lo-fi Radio" : "Play Lo-fi Radio")
+        .accessibilityLabel(isRadioPlaying ? "Pause Nook Radio" : "Play Nook Radio")
+    }
+
+    private var tipJar: some View {
+        Button(action: onTipJarTap) {
+            ZStack {
+                // glass body
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.white.opacity(0.085))
+                    .frame(width: 50, height: 46)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.28), lineWidth: 1)
+                    }
+
+                // glass shine
+                Capsule()
+                    .fill(Color.white.opacity(0.24))
+                    .frame(width: 4, height: 29)
+                    .offset(x: -15, y: -1)
+
+                // coins / heart
+                VStack(spacing: -2) {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(afterDark ? CassetteColors.chrisflixPurple : .orange)
+                    HStack(spacing: 2) {
+                        Circle().fill(Color.yellow.opacity(0.68)).frame(width: 6, height: 6)
+                        Circle().fill(Color.orange.opacity(0.68)).frame(width: 6, height: 6)
+                    }
+                }
+                .offset(y: 5)
+
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color(red: 0.24, green: 0.16, blue: 0.12))
+                    .frame(width: 40, height: 7)
+                    .offset(y: -25)
+            }
+            .shadow(color: (afterDark ? CassetteColors.chrisflixPurple : Color.orange).opacity(0.15), radius: 8)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Tip Jar")
     }
 
     private var sleepingCat: some View {
         ZStack {
-            Capsule()
-                .fill(Color(red: 0.38, green: 0.39, blue: 0.46))
-                .frame(width: 68, height: 31)
-                .rotationEffect(.degrees(-8))
+            // curled body
+            Ellipse()
+                .fill(Color(red: 0.34, green: 0.35, blue: 0.41))
+                .frame(width: 74, height: 42)
+
             Circle()
-                .fill(Color(red: 0.44, green: 0.45, blue: 0.52))
-                .frame(width: 29, height: 29)
-                .offset(x: 25, y: -6)
-            Image(systemName: "moon.zzz.fill")
-                .font(.caption2)
+                .stroke(Color(red: 0.45, green: 0.46, blue: 0.54), lineWidth: 7)
+                .frame(width: 47, height: 47)
+                .offset(x: -11, y: 2)
+
+            // head
+            ZStack {
+                Circle()
+                    .fill(Color(red: 0.43, green: 0.44, blue: 0.51))
+                    .frame(width: 30, height: 30)
+
+                HStack(spacing: 9) {
+                    Capsule().fill(Color.black.opacity(0.70)).frame(width: 5, height: 1.5)
+                    Capsule().fill(Color.black.opacity(0.70)).frame(width: 5, height: 1.5)
+                }
+                .offset(y: 2)
+
+                Image(systemName: "triangle.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color(red: 0.43, green: 0.44, blue: 0.51))
+                    .rotationEffect(.degrees(-14))
+                    .offset(x: -8, y: -16)
+
+                Image(systemName: "triangle.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color(red: 0.43, green: 0.44, blue: 0.51))
+                    .rotationEffect(.degrees(14))
+                    .offset(x: 8, y: -16)
+            }
+            .offset(x: 25, y: -7)
+
+            Image(systemName: "zzz")
+                .font(.caption.bold())
                 .foregroundStyle(CassetteColors.chrisflixPurple.opacity(0.82))
-                .offset(x: 49, y: -25)
+                .offset(x: 49, y: -30)
         }
+        .accessibilityHidden(true)
     }
 
     private var fireColorOne: Color {
