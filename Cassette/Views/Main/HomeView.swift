@@ -122,14 +122,18 @@ struct HomeView: View {
                     Image("ChrasssetteHeader")
                         .resizable()
                         .scaledToFit()
-                        .overlay(alignment: .bottom) {
+                        .mask(
                             LinearGradient(
-                                colors: [.clear, CassetteColors.chrisflixPurpleBlack.opacity(0.92)],
+                                stops: [
+                                    .init(color: .clear, location: 0.00),
+                                    .init(color: .black, location: 0.10),
+                                    .init(color: .black, location: 0.78),
+                                    .init(color: .clear, location: 1.00)
+                                ],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
-                            .frame(height: 64)
-                        }
+                        )
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, -CassetteSpacing.l)
