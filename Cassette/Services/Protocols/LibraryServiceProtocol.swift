@@ -54,6 +54,14 @@ protocol LibraryServiceProtocol: AnyObject, Sendable {
     func recentlyAddedAlbums(size: Int) async throws -> [AlbumID3]
     func allAlbums() async throws -> [AlbumID3]
 
+    // MARK: - Nook
+
+    /// Server-managed podcast channels and episodes, when supported by the Subsonic server.
+    func podcasts() async throws -> [PodcastChannel]
+
+    /// Most recently published podcast episodes across all channels.
+    func newestPodcasts(count: Int) async throws -> [PodcastEpisode]
+
     /// One page of the library's songs via search3's empty-query wildcard — Navidrome's only whole-library
     /// song enumeration (there is no dedicated endpoint). Returned in server order; callers page with
     /// `offset`/`count` and sort client-side once loaded.
@@ -156,6 +164,10 @@ extension LibraryServiceProtocol {
 
     /// Default no-op keeps lightweight offline/test conformers source-compatible.
     func reportPlayback(songId: String, positionMs: Int, state: PlaybackReportState) async {}
+
+    /// Defaults keep test/offline conformers source-compatible when they do not expose podcasts.
+    func podcasts() async throws -> [PodcastChannel] { [] }
+    func newestPodcasts(count: Int) async throws -> [PodcastEpisode] { [] }
 
     /// Default: fall straight through to the library heuristic. `LibraryService` overrides this to
     /// prefer a sonic Instant Mix of the seed track; the default keeps stubs and alternative
