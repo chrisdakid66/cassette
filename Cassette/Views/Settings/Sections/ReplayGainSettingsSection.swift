@@ -12,6 +12,21 @@ struct ReplayGainSettingsSection: View {
         let rg = container?.replayGainSettings
 
         Section("Playback") {
+            NavigationLink {
+                EqualizerView()
+            } label: {
+                Label {
+                    HStack {
+                        Text("Equalizer")
+                        Spacer()
+                        Text(container?.equalizerSettings.preset.displayName ?? "Flat")
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    SettingsIcon(systemImage: "slider.horizontal.3", color: CassetteColors.chrisflixPurple)
+                }
+            }
+
             Toggle(isOn: Binding(
                 get: { rg?.enabled ?? false },
                 set: { newVal in
