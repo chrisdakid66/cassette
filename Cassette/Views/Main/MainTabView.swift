@@ -99,7 +99,7 @@ struct MainTabView: View {
                 }
             }
 
-            Tab("Nook", systemImage: "book.closed.fill", value: AppTab.nook) {
+            Tab("Nook", systemImage: "flame.fill", value: AppTab.nook) {
                 NavigationStack {
                     NookView()
                 }
