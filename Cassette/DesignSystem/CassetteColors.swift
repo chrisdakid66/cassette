@@ -11,6 +11,23 @@ import SwiftUI
 // Asset Catalog entries must be created alongside this file (see spec below).
 
 public enum CassetteColors {
+
+    // MARK: — Chrisflix Music
+    /// Chrisflix's signature purple-to-black visual language.
+    public static let chrisflixPurple = Color(hex: "#8B5CF6")
+    public static let chrisflixDeepPurple = Color(hex: "#4C1D95")
+    public static let chrisflixPurpleBlack = Color(hex: "#160C24")
+    public static let chrisflixBlack = Color(hex: "#000000")
+
+    public static let chrisflixBackgroundGradient = LinearGradient(
+        stops: [
+            .init(color: chrisflixDeepPurple.opacity(0.92), location: 0.0),
+            .init(color: chrisflixPurpleBlack, location: 0.34),
+            .init(color: chrisflixBlack, location: 0.78)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottom
+    )
     
     // MARK: — Accent
     /// Primary brand color. CTA, active icons, progress bars, play button.
