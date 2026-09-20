@@ -86,11 +86,13 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Build") {
+            Section {
                 LabeledContent("Chrasssette Build", value: "Nook v0.5")
                 LabeledContent("App Version", value: appVersion)
                 LabeledContent("GitHub Run", value: "#\(buildNumber)")
                 LabeledContent("Branch", value: "chrasssette-nook-v0.5")
+            } header: {
+                Text("Build")
             } footer: {
                 Text("The GitHub run number is stamped into each Actions build so you can tell exactly which IPA is installed.")
             }
