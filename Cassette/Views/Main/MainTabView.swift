@@ -95,7 +95,7 @@ struct MainTabView: View {
 
             Tab("Library", systemImage: "books.vertical.fill", value: AppTab.library) {
                 NavigationStack {
-                    ChrisflixLibraryView()
+                    ChrasssetteLibraryView()
                 }
             }
         }
@@ -125,7 +125,7 @@ struct MainTabView: View {
 }
 
 
-private struct ChrisflixLibraryView: View {
+private struct ChrasssetteLibraryView: View {
     @Namespace private var playlistZoomNamespace
 
     var body: some View {
@@ -175,14 +175,10 @@ private struct ChrisflixLibraryView: View {
     ) -> some View {
         NavigationLink(destination: destination()) {
             HStack(spacing: CassetteSpacing.m) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(CassetteColors.chrisflixPurple.opacity(0.24))
-                        .frame(width: 44, height: 44)
-                    Image(systemName: systemImage)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(CassetteColors.chrisflixPurple)
-                }
+                Image(systemName: systemImage)
+                    .font(.system(size: 21, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 44)
 
                 Text(title)
                     .font(.headline)
@@ -194,12 +190,8 @@ private struct ChrisflixLibraryView: View {
                     .font(.caption.bold())
                     .foregroundStyle(.white.opacity(0.55))
             }
-            .padding(CassetteSpacing.m)
-            .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(.white.opacity(0.06), lineWidth: 0.5)
-            }
+            .padding(.horizontal, CassetteSpacing.s)
+            .padding(.vertical, CassetteSpacing.m)
         }
         .buttonStyle(.plain)
     }
