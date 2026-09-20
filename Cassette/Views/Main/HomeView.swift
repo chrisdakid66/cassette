@@ -110,6 +110,19 @@ struct HomeView: View {
             ScrollView {
             VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
                 #if os(iOS)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Chrasssette")
+                        .font(.system(size: 40, weight: .black, design: .rounded))
+                        .tracking(-1.4)
+                        .foregroundStyle(.white)
+                    Text("YOUR MUSIC")
+                        .font(.caption2.weight(.bold))
+                        .tracking(2.2)
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+                .padding(.top, CassetteSpacing.s)
+                #endif
+                #if os(iOS)
                 if !visiblePinnedItems.isEmpty {
                     pinnedSection
                 }
@@ -129,7 +142,7 @@ struct HomeView: View {
         }
         }
         .miniPlayerBottomMargin()
-        .navigationTitle("Chrisflix")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             #if !os(macOS)
             // Renders nothing unless the server exposes more than one library.
@@ -563,18 +576,13 @@ private struct HomeLibraryRowLabel: View {
 
     var body: some View {
         HStack(spacing: CassetteSpacing.m) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(Color.cassetteAccent)
-                    .frame(width: 30, height: 30)
-                Image(systemName: systemImage)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-            }
+            Image(systemName: systemImage)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 30, height: 30)
             Text(title)
                 .font(.cassetteCellTitle)
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
             Spacer(minLength: 0)
             Image(systemName: "chevron.right")
                 .font(.caption)
