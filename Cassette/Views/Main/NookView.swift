@@ -421,7 +421,7 @@ private struct NookPodcastChannelView: View {
                                         }
                                         if let duration = episode.duration, duration > 0 {
                                             Text("•")
-                                            Text(Duration.seconds(duration).formatted(.time(pattern: .hourMinuteSecond)))
+                                            Text(formatDuration(duration))
                                         }
                                     }
                                     .font(.caption)
@@ -458,6 +458,17 @@ private struct NookPodcastChannelView: View {
         .navigationTitle(channel.title)
         .navigationBarTitleDisplayMode(.inline)
         .miniPlayerBottomMargin()
+    }
+
+    private func formatDuration(_ seconds: Int) -> String {
+        let safe = max(seconds, 0)
+        let hours = safe / 3600
+        let minutes = (safe % 3600) / 60
+        let secs = safe % 60
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, secs)
+        }
+        return String(format: "%d:%02d", minutes, secs)
     }
 
     private func play(_ episode: PodcastEpisode) {
