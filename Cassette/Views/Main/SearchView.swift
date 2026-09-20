@@ -103,7 +103,10 @@ struct SearchView: View {
         // [DIAG] Measures how often and how quickly body is re-evaluated on search open.
         let _ = Logger.ui.debug("[SEARCH-OPEN] SearchView.body — query='\(searchQuery, privacy: .public)'")
         let trimmed = searchQuery.trimmingCharacters(in: .whitespaces)
-        Group {
+        ZStack {
+            AnimatedAmbientBackground()
+
+            Group {
             if trimmed.isEmpty {
                 SearchHistoryListView(
                     serverId: serverId,
@@ -123,7 +126,9 @@ struct SearchView: View {
                     }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .miniPlayerBottomMargin()
+            }
             }
         }
         .navigationDestination(for: ArtistID3.self) { artist in
