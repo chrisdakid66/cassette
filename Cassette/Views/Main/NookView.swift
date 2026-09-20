@@ -111,7 +111,41 @@ struct NookView: View {
                 .padding(.top, CassetteSpacing.m)
                 .padding(.bottom, CassetteSpacing.xl)
             }
+            .allowsHitTesting(!showExpandedRoom)
+            .scaleEffect(showExpandedRoom ? 1.035 : 1)
+            .blur(radius: showExpandedRoom ? 5 : 0)
+
+            if showExpandedRoom {
+                NookImmersiveRoomView(
+                    audiobookAlbums: audiobookAlbums,
+                    podcastAlbums: podcastAlbums,
+                    podcastChannels: podcastChannels,
+                    newestEpisodes: newestEpisodes,
+                    radioStations: radioStations,
+                    selectedRadioName: $selectedRadioName,
+                    afterDark: $afterDark,
+                    weather: weather,
+                    isInstallingStarterStations: isInstallingStarterStations,
+                    hasStarterStations: hasNookStarterStations,
+                    onClose: {
+                        withAnimation(.spring(response: 0.44, dampingFraction: 0.90)) {
+                            showExpandedRoom = false
+                        }
+                    },
+                    onPlayRadio: playRadio,
+                    onInstallStarterStations: installStarterRadioStations,
+                    onTipJarTap: openTipJar,
+                    onToggleAfterDark: toggleAfterDark
+                )
+                .transition(
+                    .scale(scale: 0.76, anchor: .center)
+                    .combined(with: .opacity)
+                )
+                .zIndex(20)
+            }
         }
+        .animation(.spring(response: 0.48, dampingFraction: 0.88), value: showExpandedRoom)
+        .toolbar(showExpandedRoom ? .hidden : .automatic, for: .tabBar)
         .navigationBarTitleDisplayMode(.inline)
         .miniPlayerBottomMargin()
         .task(id: container?.serverState.libraryLoadKey) {
@@ -133,28 +167,7 @@ struct NookView: View {
                     }
             }
         }
-        .fullScreenCover(isPresented: $showExpandedRoom) {
-            NavigationStack {
-                NookExpandedRoomView(
-                    audiobookAlbums: audiobookAlbums,
-                    podcastAlbums: podcastAlbums,
-                    podcastChannels: podcastChannels,
-                    newestEpisodes: newestEpisodes,
-                    radioStations: radioStations,
-                    selectedRadioName: $selectedRadioName,
-                    afterDark: $afterDark,
-                    weather: weather,
-                    cashAppURL: cashAppURL,
-                    isInstallingStarterStations: isInstallingStarterStations,
-                    hasStarterStations: hasNookStarterStations,
-                    onClose: { showExpandedRoom = false },
-                    onPlayRadio: playRadio,
-                    onInstallStarterStations: installStarterRadioStations,
-                    onTipJarTap: openTipJar,
-                    onToggleAfterDark: toggleAfterDark
-                )
-            }
-        }
+
     }
 
     private var nookHeader: some View {
@@ -176,7 +189,25 @@ struct NookView: View {
 
                 Text(afterDark ? "Nook After Dark" : "Nook")
                     .font(.system(size: afterDark ? 36 : 42, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(
+                        afterDark
+                            ? AnyShapeStyle(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white,
+                                        Color(red: 0.72, green: 0.46, blue: 1.0),
+                                        CassetteColors.chrisflixPurple
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            : AnyShapeStyle(Color.white)
+                    )
+                    .shadow(
+                        color: afterDark ? CassetteColors.chrisflixPurple.opacity(0.95) : .clear,
+                        radius: afterDark ? 14 : 0
+                    )
             }
 
             Text(afterDark ? "The fire went violet. You found it." : "Lo-fi radio, long listens, and cozy corners")
@@ -206,7 +237,9 @@ struct NookView: View {
                 .frame(maxHeight: .infinity, alignment: .top)
 
             Button {
-                showExpandedRoom = true
+                withAnimation(.spring(response: 0.48, dampingFraction: 0.88)) {
+                    showExpandedRoom = true
+                }
             } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
@@ -1167,10 +1200,20 @@ private struct NookFireplaceScene: View {
                 .fill(Color(red: 0.34, green: 0.35, blue: 0.41))
                 .frame(width: 74, height: 42)
 
-            Circle()
-                .stroke(Color(red: 0.45, green: 0.46, blue: 0.54), lineWidth: 7)
-                .frame(width: 47, height: 47)
-                .offset(x: -11, y: 2)
+            Path { path in
+                path.move(to: CGPoint(x: 5, y: 28))
+                path.addCurve(
+                    to: CGPoint(x: 45, y: 10),
+                    control1: CGPoint(x: 8, y: 8),
+                    control2: CGPoint(x: 35, y: 4)
+                )
+            }
+            .stroke(
+                Color(red: 0.45, green: 0.46, blue: 0.54),
+                style: StrokeStyle(lineWidth: 7, lineCap: .round)
+            )
+            .frame(width: 52, height: 34)
+            .offset(x: -14, y: 3)
 
             // head
             ZStack {
