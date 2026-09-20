@@ -16,10 +16,9 @@ struct MiniPlayerAccessoryView: View {
     private let swipeThreshold: CGFloat = 100
     private let velocityThreshold: CGFloat = 200
 
-    // System-adaptive content colours so they read on the accessory's translucent glass over ANY backdrop
-    // (dark on the light Home, light in dark mode) — an explicit black/white can't track what's behind it.
-    private var typoColor: Color { .primary }
-    private var typoSecondaryColor: Color { .secondary }
+    // Chrasssette mini-player uses a solid purple surface, so its content colors are fixed.
+    private var typoColor: Color { .white }
+    private var typoSecondaryColor: Color { .white.opacity(0.68) }
 
     var body: some View {
         if let playerState = container?.playerState {
@@ -55,6 +54,16 @@ struct MiniPlayerAccessoryView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: isInline)
+        .background(
+            CassetteColors.chrisflixDeepPurple.opacity(0.98),
+            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 0.6)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: .black.opacity(0.38), radius: 14, y: 7)
         .offset(x: dragOffset)
         .opacity(1.0 - min(abs(dragOffset) / 200, 0.4))
         .contentShape(Rectangle())
