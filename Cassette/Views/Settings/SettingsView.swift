@@ -85,11 +85,28 @@ struct SettingsView: View {
                     )
                 }
             }
+
+            Section("Build") {
+                LabeledContent("Chrasssette Build", value: "Nook v0.5")
+                LabeledContent("App Version", value: appVersion)
+                LabeledContent("GitHub Run", value: "#\(buildNumber)")
+                LabeledContent("Branch", value: "chrasssette-nook-v0.5")
+            } footer: {
+                Text("The GitHub run number is stamped into each Actions build so you can tell exactly which IPA is installed.")
+            }
         }
         .formStyle(.grouped)
         .refreshable {
             await downloadsVM.loadData()
         }
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
+    }
+
+    private var buildNumber: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "Local"
     }
 
     private func settingsCategoryRow(
