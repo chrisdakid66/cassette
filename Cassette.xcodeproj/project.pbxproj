@@ -612,6 +612,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Cassette/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Chrasssette;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Chrasssette uses your location to show local weather in the Nook.";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Cassette needs to access your camera to take pictures for playlist artworks";
@@ -676,6 +677,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Cassette/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Chrasssette;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Chrasssette uses your location to show local weather in the Nook.";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Cassette needs to access your camera to take pictures for playlist artworks";
