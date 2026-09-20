@@ -18,9 +18,27 @@ final class FullPlayerViewModel {
         return URLSession(configuration: config)
     }()
 
-    var contentColor: Color { isLightBackground ? .black : .white }
-    var secondaryContentColor: Color { isLightBackground ? Color.black.opacity(0.7) : Color.white.opacity(0.7) }
-    var glassTint: Color { isLightBackground ? Color.black.opacity(0.1) : Color.white.opacity(0.15) }
+    var contentColor: Color {
+        #if os(iOS)
+        .white
+        #else
+        isLightBackground ? .black : .white
+        #endif
+    }
+    var secondaryContentColor: Color {
+        #if os(iOS)
+        Color.white.opacity(0.72)
+        #else
+        isLightBackground ? Color.black.opacity(0.7) : Color.white.opacity(0.7)
+        #endif
+    }
+    var glassTint: Color {
+        #if os(iOS)
+        Color.white.opacity(0.12)
+        #else
+        isLightBackground ? Color.black.opacity(0.1) : Color.white.opacity(0.15)
+        #endif
+    }
 
     func updateColors(for coverArtId: String?, colorExtractor: DominantColorExtractor, container: AppContainer?) async {
         guard let coverArtId else {
