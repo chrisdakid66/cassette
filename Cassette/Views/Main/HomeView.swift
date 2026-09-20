@@ -110,17 +110,14 @@ struct HomeView: View {
             ScrollView {
             VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
                 #if os(iOS)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Chrasssette")
-                        .font(.system(size: 40, weight: .black, design: .rounded))
-                        .tracking(-1.4)
-                        .foregroundStyle(.white)
-                    Text("YOUR MUSIC")
-                        .font(.caption2.weight(.bold))
-                        .tracking(2.2)
-                        .foregroundStyle(.white.opacity(0.55))
-                }
-                .padding(.top, CassetteSpacing.s)
+                Image("ChrasssetteHeader")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
+                    .padding(.top, CassetteSpacing.s)
+                    .accessibilityLabel("Chrasssette")
                 #endif
                 #if os(iOS)
                 if !visiblePinnedItems.isEmpty {
