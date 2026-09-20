@@ -154,6 +154,16 @@ actor LibraryService: LibraryServiceProtocol {
         }
     }
 
+    // MARK: - Nook
+
+    func podcasts() async throws -> [PodcastChannel] {
+        try await client().getPodcasts(includeEpisodes: true)
+    }
+
+    func newestPodcasts(count: Int) async throws -> [PodcastEpisode] {
+        try await client().getNewestPodcasts(count: count)
+    }
+
     func allSongs(offset: Int, count: Int) async throws -> [Song] {
         // The scope filters server-side; offset/count paging is unchanged by it.
         let scope = await musicFolderScope()
