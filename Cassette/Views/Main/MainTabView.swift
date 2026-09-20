@@ -16,7 +16,7 @@ struct MainTabView: View {
     @Namespace private var playerZoom
     private let fullPlayerZoomID = "full-player"
 
-    private enum AppTab: Hashable { case home, search, library }
+    private enum AppTab: Hashable { case home, search, library, nook }
 
     private var hasTrack: Bool {
         container?.playerState.currentTrack != nil || container?.playerState.isLiveStream == true
@@ -93,9 +93,15 @@ struct MainTabView: View {
                 .searchable(text: $searchText, prompt: "Artists, albums, songs\u{2026}")
             }
 
-            Tab("Library", systemImage: "books.vertical.fill", value: AppTab.library) {
+            Tab("Library", systemImage: "music.note.list", value: AppTab.library) {
                 NavigationStack {
                     ChrasssetteLibraryView()
+                }
+            }
+
+            Tab("Nook", systemImage: "book.closed.fill", value: AppTab.nook) {
+                NavigationStack {
+                    NookView()
                 }
             }
         }
