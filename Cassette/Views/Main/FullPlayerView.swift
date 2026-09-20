@@ -54,9 +54,9 @@ struct FullPlayerView: View {
     /// Horizontal margin around the cover (smaller = wider cover).
     private static let playerCoverHPadding: CGFloat = CassetteSpacing.m
     /// Minimum cover→title gap; the flowing layout's flexible Spacers distribute the rest to fill the screen.
-    private static let playerCoverToTitleGap: CGFloat = CassetteSpacing.xl
+    private static let playerCoverToTitleGap: CGFloat = CassetteSpacing.m
     /// Vertical breathing room between the flowing controls (scrubber ↔ transport ↔ volume). Raise to spread.
-    private static let playerControlsSpacing: CGFloat = CassetteSpacing.l
+    private static let playerControlsSpacing: CGFloat = CassetteSpacing.s
     #endif
 
     var body: some View {
@@ -270,7 +270,7 @@ struct FullPlayerView: View {
                 }
 
                 // Default player: a taller bottom gap shortens the greedy cover and lifts the controls up.
-                flowGap((showLyrics || showingQueue) ? CassetteSpacing.xs : 40)
+                flowGap((showLyrics || showingQueue) ? CassetteSpacing.xs : 18)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // One animation for the whole flowing reflow, keyed to the surface / lyrics toggles only, so the
