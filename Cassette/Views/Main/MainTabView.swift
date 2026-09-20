@@ -16,7 +16,7 @@ struct MainTabView: View {
     @Namespace private var playerZoom
     private let fullPlayerZoomID = "full-player"
 
-    private enum AppTab: Hashable { case home, discover, search }
+    private enum AppTab: Hashable { case home, search, library }
 
     private var hasTrack: Bool {
         container?.playerState.currentTrack != nil || container?.playerState.isLiveStream == true
@@ -85,18 +85,18 @@ struct MainTabView: View {
                 }
             }
 
-            Tab("Discover", systemImage: "sparkles", value: AppTab.discover) {
-                NavigationStack {
-                    DiscoverView()
-                }
-            }
-
-            Tab(value: AppTab.search, role: .search) {
+            Tab("Search", systemImage: "magnifyingglass", value: AppTab.search) {
                 NavigationStack(path: $searchPath) {
                     SearchView(searchQuery: $searchText, path: $searchPath)
                         .navigationTitle("Search")
                 }
                 .searchable(text: $searchText, prompt: "Artists, albums, songs\u{2026}")
+            }
+
+            Tab("Library", systemImage: "books.vertical.fill", value: AppTab.library) {
+                NavigationStack {
+                    ChrisflixLibraryView()
+                }
             }
         }
         .accentColor(.cassetteAccent)
@@ -121,5 +121,86 @@ struct MainTabView: View {
             selectedTab = .home
             homePath.append(HomeDestination.playlistById(id: id, name: name, coverArtId: coverArtId))
         }
+    }
+}
+
+
+private struct ChrisflixLibraryView: View {
+    @Namespace private var playlistZoomNamespace
+
+    var body: some View {
+        ZStack {
+            CassetteColors.chrisflixBackgroundGradient
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: CassetteSpacing.s) {
+                    Text("Your Library")
+                        .font(.largeTitle.bold())
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, CassetteSpacing.m)
+
+                    libraryLink("Playlists", systemImage: "music.note.list") {
+                        PlaylistListView(zoomNamespace: playlistZoomNamespace)
+                    }
+                    libraryLink("Albums", systemImage: "square.stack.fill") {
+                        AlbumsListView()
+                    }
+                    libraryLink("Artists", systemImage: "music.mic") {
+                        ArtistListView()
+                    }
+                    libraryLink("Songs", systemImage: "music.note") {
+                        SongsListView()
+                    }
+                    libraryLink("Favorites", systemImage: "star.fill") {
+                        FavoritesView()
+                    }
+                    libraryLink("Downloads", systemImage: "arrow.down.circle.fill") {
+                        DownloadedView()
+                    }
+                }
+                .padding(.horizontal, CassetteSpacing.l)
+                .padding(.top, CassetteSpacing.l)
+                .padding(.bottom, CassetteSpacing.xl)
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func libraryLink<Destination: View>(
+        _ title: String,
+        systemImage: String,
+        @ViewBuilder destination: () -> Destination
+    ) -> some View {
+        NavigationLink(destination: destination()) {
+            HStack(spacing: CassetteSpacing.m) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(CassetteColors.chrisflixPurple.opacity(0.24))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: systemImage)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(CassetteColors.chrisflixPurple)
+                }
+
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(.white)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.bold())
+                    .foregroundStyle(.white.opacity(0.55))
+            }
+            .padding(CassetteSpacing.m)
+            .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(.white.opacity(0.06), lineWidth: 0.5)
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
