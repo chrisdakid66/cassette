@@ -104,8 +104,7 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            CassetteColors.chrisflixBackgroundGradient
-                .ignoresSafeArea()
+            AnimatedAmbientBackground()
 
             ScrollView {
             VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
