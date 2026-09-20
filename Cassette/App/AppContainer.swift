@@ -53,6 +53,7 @@ final class AppContainer {
     let searchHistoryService: SearchHistoryService
     let replayGainService = ReplayGainService()
     let replayGainSettings = ReplayGainSettings()
+    let equalizerSettings = EqualizerSettings()
     let crossfadeSettings = CrossfadeSettings()
 
     init(inMemory: Bool = false) throws {
@@ -112,7 +113,7 @@ final class AppContainer {
         let lb = ListenBrainzService(client: lbClient, keychain: keychain)
         listenBrainzService = lb
 
-        let player = PlayerService(state: playerState, mediaResolver: resolver, serverService: server, sessionService: sessionService, artworkImageCache: artworkImageCache, libraryService: library, audioStreamCache: cache, downloadService: download, cacheSettings: cacheSettings, replayGainSettings: replayGainSettings, crossfadeSettings: crossfadeSettings, toastService: toastService, statsService: stats, listenBrainzService: lb)
+        let player = PlayerService(state: playerState, mediaResolver: resolver, serverService: server, sessionService: sessionService, artworkImageCache: artworkImageCache, libraryService: library, audioStreamCache: cache, downloadService: download, cacheSettings: cacheSettings, replayGainSettings: replayGainSettings, equalizerSettings: equalizerSettings, crossfadeSettings: crossfadeSettings, toastService: toastService, statsService: stats, listenBrainzService: lb)
         _player = player
         playerService = player
 
@@ -162,6 +163,7 @@ final class AppContainer {
         await nowPlayingService.setFavoritesService(favoritesService)
         await _player.setWidgetSyncService(widgetSyncService)
         await _player.setReplayGainService(replayGainService)
+        await _player.equalizerSettingsDidChange()
         await _player.crossfadeSettingsDidChange()
     }
 }
