@@ -103,7 +103,11 @@ struct HomeView: View {
     }
 
     var body: some View {
-        ScrollView {
+        ZStack {
+            CassetteColors.chrisflixBackgroundGradient
+                .ignoresSafeArea()
+
+            ScrollView {
             VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
                 #if os(iOS)
                 if !visiblePinnedItems.isEmpty {
@@ -123,8 +127,9 @@ struct HomeView: View {
             .padding(.top, CassetteSpacing.m)
             .padding(.bottom, CassetteSpacing.xl)
         }
+        }
         .miniPlayerBottomMargin()
-        .navigationTitle("Home")
+        .navigationTitle("Chrisflix")
         .toolbar {
             #if !os(macOS)
             // Renders nothing unless the server exposes more than one library.
