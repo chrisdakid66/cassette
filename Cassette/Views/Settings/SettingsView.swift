@@ -35,15 +35,56 @@ struct SettingsView: View {
 
     private func form(downloadsVM: DownloadsViewModel) -> some View {
         Form {
-            DownloadsSectionView(vm: downloadsVM)
-            CacheSectionView()
-            ReplayGainSettingsSection()
-            CrossfadeSettingsSection()
-            serverSection()
-            integrationsSection()
-            aboutSection()
-            KofiSupportSection()
-            SupportersSection()
+            Section("Audio") {
+                NavigationLink {
+                    PlaybackSettingsView()
+                } label: {
+                    settingsCategoryRow(
+                        title: "Playback",
+                        subtitle: "Equalizer, ReplayGain, crossfade",
+                        systemImage: "waveform",
+                        color: CassetteColors.chrisflixPurple
+                    )
+                }
+
+                NavigationLink {
+                    DownloadsStorageSettingsView(vm: downloadsVM)
+                } label: {
+                    settingsCategoryRow(
+                        title: "Downloads & Storage",
+                        subtitle: "Downloads, cache, audio quality",
+                        systemImage: "externaldrive.fill",
+                        color: .blue
+                    )
+                }
+            }
+
+            Section("Connections") {
+                if let server = container?.serverState.activeServer,
+                   let serverService = container?.serverService {
+                    NavigationLink {
+                        EditServerDestinationView(server: server, serverService: serverService)
+                    } label: {
+                        settingsCategoryRow(
+                            title: "Server",
+                            subtitle: "Navidrome connection and library scope",
+                            systemImage: "server.rack",
+                            color: .green
+                        )
+                    }
+                }
+
+                NavigationLink {
+                    IntegrationsSettingsHubView()
+                } label: {
+                    settingsCategoryRow(
+                        title: "Integrations",
+                        subtitle: "ListenBrainz, AudioMuse, external providers",
+                        systemImage: "link.circle.fill",
+                        color: .indigo
+                    )
+                }
+            }
         }
         .formStyle(.grouped)
         .refreshable {
@@ -51,93 +92,75 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Sections
-
-    private func serverSection() -> some View {
-        Section("Server") {
-            if let server = container?.serverState.activeServer,
-               let serverService = container?.serverService {
-                NavigationLink {
-                    EditServerDestinationView(server: server, serverService: serverService)
-                } label: {
-                    Label {
-                        Text("Server Configuration")
-                    } icon: {
-                        SettingsIcon(systemImage: "server.rack", color: Color.cassetteAccent)
-                    }
-                }
-            } else {
-                Text("No server configured.")
+    private func settingsCategoryRow(
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        color: Color
+    ) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                Text(subtitle)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            // TODO(v1.x): multi-server management (add / remove / switch servers)
+        } icon: {
+            SettingsIcon(systemImage: systemImage, color: color)
         }
     }
 
-    private func integrationsSection() -> some View {
-        Section("Integrations") {
-            NavigationLink {
-                ListenBrainzSettingsView()
-            } label: {
-                Label {
-                    Text("ListenBrainz")
-                } icon: {
-                    SettingsIcon(systemImage: "link.circle", color: .indigo)
-                }
-            }
-            NavigationLink {
-                AudioMuseSettingsView()
-            } label: {
-                Label {
-                    Text("AudioMuse")
-                } icon: {
-                    SettingsIcon(systemImage: "waveform.badge.magnifyingglass", color: .teal)
-                }
-            }
-            NavigationLink {
-                ExternalProvidersSettingsView()
-            } label: {
-                Label {
-                    Text("Open Releases In")
-                } icon: {
-                    SettingsIcon(systemImage: "arrow.up.right.square", color: .orange)
-                }
-            }
-        }
-    }
+}
 
-    private func aboutSection() -> some View {
-        Section("About") {
-            LabeledContent {
-                Text("Cassette")
-            } label: {
-                Label {
-                    Text("App")
-                } icon: {
-                    SettingsIcon(systemImage: "info.circle.fill", color: .blue)
-                }
-            }
-            LabeledContent("Version") {
-                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
-            }
-            LabeledContent("License") {
-                Text("Mozilla Public License 2.0")
-            }
-            LabeledContent("SwiftSonic") {
-                Text("MIT License — MathieuDubart")
-            }
-            LabeledContent("AudioStreaming") {
-                Button("MIT License — dimitris-c") {
-                    ExternalLinkOpener.open(CassetteURLs.audioStreaming)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-            }
-            Button("View on GitHub") {
-                ExternalLinkOpener.open(CassetteURLs.cassette)
-            }
-            Link("Send Feedback / Report a Bug", destination: URL(string: "mailto:support@getcassette.app?subject=Feedback%20%2F%20Bug%20Report")!)
+private struct PlaybackSettingsView: View {
+    var body: some View {
+        Form {
+            ReplayGainSettingsSection()
+            CrossfadeSettingsSection()
         }
+        .formStyle(.grouped)
+        .navigationTitle("Playback")
+    }
+}
+
+private struct DownloadsStorageSettingsView: View {
+    let vm: DownloadsViewModel
+
+    var body: some View {
+        Form {
+            DownloadsSectionView(vm: vm)
+            CacheSectionView()
+        }
+        .formStyle(.grouped)
+        .navigationTitle("Downloads & Storage")
+    }
+}
+
+private struct IntegrationsSettingsHubView: View {
+    var body: some View {
+        Form {
+            Section {
+                NavigationLink {
+                    ListenBrainzSettingsView()
+                } label: {
+                    Label("ListenBrainz", systemImage: "link.circle")
+                }
+
+                NavigationLink {
+                    AudioMuseSettingsView()
+                } label: {
+                    Label("AudioMuse", systemImage: "waveform.badge.magnifyingglass")
+                }
+
+                NavigationLink {
+                    ExternalProvidersSettingsView()
+                } label: {
+                    Label("Open Releases In", systemImage: "arrow.up.right.square")
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("Integrations")
     }
 }
 
