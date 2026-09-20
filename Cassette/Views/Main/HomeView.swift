@@ -137,7 +137,8 @@ struct HomeView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, -CassetteSpacing.l)
-                .padding(.top, -CassetteSpacing.m)
+                .padding(.top, -72)
+                .ignoresSafeArea(.container, edges: .top)
                 .accessibilityLabel("Chrasssette")
                 #endif
                 #if os(iOS)
