@@ -29,6 +29,7 @@ actor PlayerService: PlayerServiceProtocol {
     private let downloadService: any DownloadServiceProtocol
     private let cacheSettings: CacheSettings
     private let replayGainSettings: ReplayGainSettings
+    private let equalizerSettings: EqualizerSettings
     private let crossfadeSettings: CrossfadeSettings
     private var crossfadeConfig = CrossfadeConfig(duration: 0, disableForGapless: true)
     private var nowPlayingService: (any NowPlayingServiceProtocol)?
@@ -146,6 +147,7 @@ actor PlayerService: PlayerServiceProtocol {
         downloadService: any DownloadServiceProtocol,
         cacheSettings: CacheSettings,
         replayGainSettings: ReplayGainSettings,
+        equalizerSettings: EqualizerSettings,
         crossfadeSettings: CrossfadeSettings,
         toastService: ToastService,
         statsService: StatsService,
@@ -161,6 +163,7 @@ actor PlayerService: PlayerServiceProtocol {
         self.downloadService = downloadService
         self.cacheSettings = cacheSettings
         self.replayGainSettings = replayGainSettings
+        self.equalizerSettings = equalizerSettings
         self.crossfadeSettings = crossfadeSettings
         self.toastService = toastService
         self.statsService = statsService
@@ -859,6 +862,11 @@ actor PlayerService: PlayerServiceProtocol {
     func replayGainSettingsDidChange() async {
         let (track, config) = await MainActor.run { (state.currentTrack, replayGainSettings.config) }
         await replayGainService?.apply(currentTrack: track, config: config)
+    }
+
+    func equalizerSettingsDidChange() async {
+        let config = await MainActor.run { equalizerSettings.config }
+        await replayGainService?.applyEqualizer(config: config)
     }
 
     func crossfadeSettingsDidChange() async {
