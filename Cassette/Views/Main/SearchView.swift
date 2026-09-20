@@ -475,6 +475,9 @@ struct SearchView: View {
         @Environment(\.appContainer) private var container
         @Query private var historyEntries: [SearchHistoryEntry]
         @State private var showClearConfirm = false
+        @State private var discoveryAlbums: [AlbumID3] = []
+        @State private var spotlightAlbums: [AlbumID3] = []
+        @State private var isLoadingDiscovery = false
 
         init(serverId: String, path: Binding<NavigationPath>) {
             // [DIAG] Time the Query descriptor construction.
@@ -497,82 +500,141 @@ struct SearchView: View {
 
         var body: some View {
             let _ = Self._printChanges()
-            // [DIAG] Log raw @Query result count and cost of the in-process serverHistory filter.
-            // historyEntries.count > 0 here means the SwiftData fetch already ran (on main thread).
-            // If filter time >> 0ms with large historyEntries, add serverId predicate to @Query.
             let bodyStart = CFAbsoluteTimeGetCurrent()
             let history = serverHistory
             let rowsData = history.map { SearchHistoryRowData(entry: $0) }
             let filterMs = Int((CFAbsoluteTimeGetCurrent() - bodyStart) * 1000)
             let _ = Logger.ui.debug("[SEARCH-OPEN] SearchHistoryListView.body — @Query:\(historyEntries.count) server-filtered:\(history.count) filter:\(filterMs)ms")
             let _ = { if filterMs > 16 { Logger.ui.warning("[BODY-SLOW] SearchHistoryListView filter=\(filterMs)ms (main thread)") } }()
-            if history.isEmpty {
-                EmptyStateView(
-                    systemImage: "magnifyingglass",
-                    title: "Search your library",
-                    subtitle: "Find songs, albums, artists, and playlists from your server."
-                )
-            } else {
-                List {
-                    Section {
-                        LazyVStack(spacing: 0) {
-                            ForEach(rowsData) { rowData in
-                                Button {
-                                    let target = SearchHistoryNavTarget(
-                                        itemId: rowData.itemId,
-                                        itemType: rowData.itemType,
-                                        displayName: rowData.displayName,
-                                        coverArtId: rowData.coverArtId
-                                    )
-                                    Task {
-                                        await container?.searchHistoryService.record(
-                                            itemId: rowData.itemId, itemType: rowData.itemType,
-                                            displayName: rowData.displayName, coverArtId: rowData.coverArtId,
-                                            serverId: serverId
-                                        )
-                                    }
-                                    path.append(target)
-                                } label: {
-                                    SearchHistoryEntryRow(data: rowData)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .listRowInsets(EdgeInsets())
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    } header: {
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
+                    if isLoadingDiscovery && discoveryAlbums.isEmpty && spotlightAlbums.isEmpty {
                         HStack {
-                            Text("Recent")
-                                .font(.cassetteSectionTitle)
-                                .foregroundStyle(.primary)
                             Spacer()
-                            Button("Clear") {
-                                showClearConfirm = true
-                            }
-                            .font(.cassetteBody)
-                            .foregroundStyle(Color.cassetteAccent)
+                            ProgressView()
+                            Spacer()
                         }
-                        .textCase(nil)
+                        .padding(.vertical, CassetteSpacing.xl)
+                    } else {
+                        if !spotlightAlbums.isEmpty {
+                            searchAlbumStrip(title: "Spotlight", albums: spotlightAlbums)
+                        }
+                        if !discoveryAlbums.isEmpty {
+                            searchAlbumStrip(title: "Recently Added", albums: discoveryAlbums)
+                        }
+                    }
+
+                    if !history.isEmpty {
+                        VStack(alignment: .leading, spacing: CassetteSpacing.s) {
+                            HStack {
+                                Text("Recent Searches")
+                                    .font(.cassetteSectionTitle)
+                                Spacer()
+                                Button("Clear") { showClearConfirm = true }
+                                    .font(.cassetteBody)
+                                    .foregroundStyle(CassetteColors.chrisflixPurple)
+                            }
+
+                            VStack(spacing: 0) {
+                                ForEach(rowsData) { rowData in
+                                    Button {
+                                        let target = SearchHistoryNavTarget(
+                                            itemId: rowData.itemId,
+                                            itemType: rowData.itemType,
+                                            displayName: rowData.displayName,
+                                            coverArtId: rowData.coverArtId
+                                        )
+                                        Task {
+                                            await container?.searchHistoryService.record(
+                                                itemId: rowData.itemId, itemType: rowData.itemType,
+                                                displayName: rowData.displayName, coverArtId: rowData.coverArtId,
+                                                serverId: serverId
+                                            )
+                                        }
+                                        path.append(target)
+                                    } label: {
+                                        SearchHistoryEntryRow(data: rowData)
+                                            .padding(.vertical, 2)
+                                    }
+                                    .buttonStyle(.plain)
+                                    if rowData.id != rowsData.last?.id {
+                                        Divider()
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, CassetteSpacing.m)
+                            .background(.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        }
+                    }
+
+                    if history.isEmpty && discoveryAlbums.isEmpty && spotlightAlbums.isEmpty && !isLoadingDiscovery {
+                        EmptyStateView(
+                            systemImage: "magnifyingglass",
+                            title: "Search your library",
+                            subtitle: "Find songs, albums, artists, and playlists from your server."
+                        )
+                        .padding(.top, 80)
                     }
                 }
-                .listStyle(.plain)
-                // [DIAG] Fires after the List is on-screen — gap between body log and this
-                // log is the main-thread cost of the @Query fetch + SwiftUI layout pass.
-                .onAppear {
-                    Logger.ui.debug("[SEARCH-OPEN] SearchHistoryListView appeared — \(history.count) row(s) visible")
+                .padding(.horizontal, CassetteSpacing.l)
+                .padding(.bottom, CassetteSpacing.xl)
+            }
+            .miniPlayerBottomMargin()
+            .task(id: container?.serverState.libraryLoadKey) {
+                guard container?.serverState.isOnline == true,
+                      let library = container?.libraryService else { return }
+                isLoadingDiscovery = true
+                async let recent = library.recentlyAddedAlbums(size: 8)
+                async let most = library.mostPlayedAlbums(size: 6)
+                do {
+                    let (r, m) = try await (recent, most)
+                    discoveryAlbums = r
+                    spotlightAlbums = m
+                } catch {
+                    Logger.ui.debug("Search discovery load failed: \(error, privacy: .public)")
                 }
-                // Clearing search history is destructive with no undo, so gate it behind a confirmation.
-                // A centered .alert (popin) is used here — intentionally diverging from the playlist
-                // delete's bottom action-sheet. The clear runs ONLY on confirm; Cancel leaves the history
-                // intact. .alert is a centered modal on both iOS and macOS.
-                .alert("Clear search history?", isPresented: $showClearConfirm) {
-                    Button("Clear", role: .destructive) {
-                        Task { await container?.searchHistoryService.clear(serverId: serverId) }
+                isLoadingDiscovery = false
+            }
+            .alert("Clear search history?", isPresented: $showClearConfirm) {
+                Button("Clear", role: .destructive) {
+                    Task { await container?.searchHistoryService.clear(serverId: serverId) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will remove all your recent searches. This action cannot be undone.")
+            }
+        }
+
+        @ViewBuilder
+        private func searchAlbumStrip(title: String, albums: [AlbumID3]) -> some View {
+            VStack(alignment: .leading, spacing: CassetteSpacing.s) {
+                Text(title)
+                    .font(.cassetteSectionTitle)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: CassetteSpacing.m) {
+                        ForEach(albums) { album in
+                            NavigationLink(value: HomeDestination.album(album)) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    CoverArtView(id: album.coverArt ?? album.id, size: 300)
+                                        .frame(width: 144, height: 144)
+                                        .cassetteCoverStyle(cornerRadius: CassetteCornerRadius.standard)
+                                    Text(album.name)
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(1)
+                                        .frame(width: 144, alignment: .leading)
+                                    Text(album.artist ?? "")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                        .frame(width: 144, alignment: .leading)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("This will remove all your recent searches. This action cannot be undone.")
                 }
             }
         }
