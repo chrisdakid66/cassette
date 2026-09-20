@@ -110,14 +110,31 @@ struct HomeView: View {
             ScrollView {
             VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
                 #if os(iOS)
-                Image("ChrasssetteHeader")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .shadow(color: .black.opacity(0.35), radius: 14, y: 8)
-                    .padding(.top, CassetteSpacing.s)
-                    .accessibilityLabel("Chrasssette")
+                ZStack {
+                    Image("ChrasssetteHeader")
+                        .resizable()
+                        .scaledToFill()
+                        .blur(radius: 28)
+                        .opacity(0.34)
+                        .scaleEffect(1.08)
+                        .clipped()
+
+                    Image("ChrasssetteHeader")
+                        .resizable()
+                        .scaledToFit()
+                        .overlay(alignment: .bottom) {
+                            LinearGradient(
+                                colors: [.clear, CassetteColors.chrisflixPurpleBlack.opacity(0.92)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 64)
+                        }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, -CassetteSpacing.l)
+                .padding(.top, -CassetteSpacing.m)
+                .accessibilityLabel("Chrasssette")
                 #endif
                 #if os(iOS)
                 if !visiblePinnedItems.isEmpty {
@@ -420,15 +437,32 @@ struct HomeView: View {
         if isOnline {
             if let vm = viewModel, !vm.recentAlbums.isEmpty || vm.isLoading {
                 VStack(alignment: .leading, spacing: CassetteSpacing.s) {
-                    Text("Recently Added")
-                        .font(.cassetteSectionTitle)
+                    HStack {
+                        Text("Recently Added")
+                            .font(.cassetteSectionTitle)
+                        Spacer()
+                        if !vm.recentAlbums.isEmpty {
+                            NavigationLink {
+                                RecentlyAddedAlbumsView(albums: vm.recentAlbums)
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text("See All")
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.bold())
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(CassetteColors.chrisflixPurple)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                     if vm.isLoading && vm.recentAlbums.isEmpty {
                         LazyVGrid(columns: recentColumns, spacing: CassetteSpacing.m) {
                             ForEach(0..<6, id: \.self) { _ in SkeletonAlbumCard() }
                         }
                     } else {
                         LazyVGrid(columns: recentColumns, spacing: CassetteSpacing.m) {
-                            ForEach(vm.recentAlbums) { album in
+                            ForEach(Array(vm.recentAlbums.prefix(6))) { album in
                                 NavigationLink(value: HomeDestination.album(album)) {
                                     HomeAlbumCell(album: album, namespace: recentlyAddedZoomNamespace)
                                 }
