@@ -200,10 +200,10 @@ private struct OnlinePlaylistRow: View {
 
     var body: some View {
         HStack(spacing: CassetteSpacing.m) {
-            PlaylistCoverThumbnail(playlistId: playlist.id, serverId: nil, coverArtId: playlist.coverArt ?? playlist.id, title: playlist.name, size: 56)
+            PlaylistCoverThumbnail(playlistId: playlist.id, serverId: nil, coverArtId: playlist.coverArt ?? playlist.id, title: playlist.name.chrasssetteDisplayName, size: 56)
                 .cassetteMatchedTransitionSource(id: playlist.id, in: namespace)
             VStack(alignment: .leading, spacing: 2) {
-                Text(playlist.name)
+                Text(playlist.name.chrasssetteDisplayName)
                     .font(.cassetteCellTitle)
                     .lineLimit(1)
                 Text("\(playlist.songCount) tracks")
@@ -219,14 +219,14 @@ private struct OnlinePlaylistRow: View {
         .collectionContextMenu(
             itemType: .playlist,
             itemId: playlist.id,
-            displayName: playlist.name,
+            displayName: playlist.name.chrasssetteDisplayName,
             displaySubtitle: "Playlist",
             coverArtId: playlist.coverArt,
             coverImage: coverImage,
             onDelete: { showDeleteConfirm = true }
         )
         .deletePlaylistConfirmation(
-            playlistName: playlist.name,
+            playlistName: playlist.name.chrasssetteDisplayName,
             isPresented: $showDeleteConfirm,
             hasDownloads: !downloadedMatches.isEmpty
         ) { purgeDownloads in
@@ -301,7 +301,7 @@ private struct OfflinePlaylistContent: View {
             List {
                 Section("Downloaded Playlists") {
                     ForEach(playlists) { playlist in
-                        NavigationLink(value: HomeDestination.playlistById(id: playlist.playlistId, name: playlist.name, coverArtId: playlist.coverArtId)) {
+                        NavigationLink(value: HomeDestination.playlistById(id: playlist.playlistId, name: playlist.name.chrasssetteDisplayName, coverArtId: playlist.coverArtId)) {
                             OfflinePlaylistRow(playlist: playlist)
                         }
                     }
@@ -321,9 +321,9 @@ private struct OfflinePlaylistRow: View {
 
     var body: some View {
         HStack(spacing: CassetteSpacing.m) {
-            PlaylistCoverThumbnail(playlistId: playlist.playlistId, serverId: nil, coverArtId: playlist.coverArtId ?? playlist.playlistId, title: playlist.name, size: 56)
+            PlaylistCoverThumbnail(playlistId: playlist.playlistId, serverId: nil, coverArtId: playlist.coverArtId ?? playlist.playlistId, title: playlist.name.chrasssetteDisplayName, size: 56)
             VStack(alignment: .leading, spacing: 2) {
-                Text(playlist.name)
+                Text(playlist.name.chrasssetteDisplayName)
                     .font(.cassetteCellTitle)
                     .lineLimit(1)
                 Text("\(playlist.tracksCount) tracks")
@@ -339,7 +339,7 @@ private struct OfflinePlaylistRow: View {
         .collectionContextMenu(
             itemType: .playlist,
             itemId: playlist.playlistId,
-            displayName: playlist.name,
+            displayName: playlist.name.chrasssetteDisplayName,
             displaySubtitle: "Playlist",
             coverArtId: playlist.coverArtId,
             coverImage: coverImage
