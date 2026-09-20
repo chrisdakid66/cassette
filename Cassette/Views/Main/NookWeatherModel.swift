@@ -4,6 +4,7 @@
 
 import Foundation
 import CoreLocation
+import Combine
 import SwiftUI
 
 struct NookWeatherSnapshot: Sendable {
