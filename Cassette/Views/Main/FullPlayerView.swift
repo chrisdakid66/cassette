@@ -127,8 +127,13 @@ struct FullPlayerView: View {
             ZStack {
                 Color.black
                 dominant
+                if showingQueue {
+                    Color.black.opacity(0.58)
+                    CassetteColors.chrisflixPurpleBlack.opacity(0.34)
+                }
             }
             .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.22), value: showingQueue)
             #else
             // macOS keeps its blurred cover wash (not in scope for the immersive pass).
             ZStack {
