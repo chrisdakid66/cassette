@@ -155,7 +155,12 @@ struct NookView: View {
             _ = await (albums, podcasts, radios)
         }
         .task {
-            weather.refresh()
+            weather.refreshIfStale()
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 600_000_000_000)
+                guard !Task.isCancelled else { break }
+                weather.refreshIfStale()
+            }
         }
         .sheet(isPresented: $showNookLinks) {
             NavigationStack {
@@ -189,24 +194,9 @@ struct NookView: View {
 
                 Text(afterDark ? "Nook After Dark" : "Nook")
                     .font(.system(size: afterDark ? 36 : 42, weight: .black, design: .rounded))
-                    .foregroundStyle(
-                        afterDark
-                            ? AnyShapeStyle(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white,
-                                        Color(red: 0.72, green: 0.46, blue: 1.0),
-                                        CassetteColors.chrisflixPurple
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            : AnyShapeStyle(Color.white)
-                    )
-                    .shadow(
-                        color: afterDark ? CassetteColors.chrisflixPurple.opacity(0.95) : .clear,
-                        radius: afterDark ? 14 : 0
+                    .chrasssetteNeonTitle(
+                        accent: afterDark ? CassetteColors.chrisflixPurple : Color.orange,
+                        glow: afterDark ? 0.92 : 0.34
                     )
             }
 
@@ -268,7 +258,7 @@ struct NookView: View {
 
     private var weatherCard: some View {
         Button {
-            weather.refresh()
+            weather.refresh(force: true)
         } label: {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
