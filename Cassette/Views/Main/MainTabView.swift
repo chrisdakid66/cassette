@@ -88,7 +88,18 @@ struct MainTabView: View {
             Tab("Search", systemImage: "magnifyingglass", value: AppTab.search) {
                 NavigationStack(path: $searchPath) {
                     SearchView(searchQuery: $searchText, path: $searchPath)
-                        .navigationTitle("Search")
+                        .navigationTitle("")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .principal) {
+                                Text("Search")
+                                    .font(.headline.bold())
+                                    .chrasssetteNeonTitle(
+                                        accent: CassetteColors.chrisflixPurple,
+                                        glow: 0.40
+                                    )
+                            }
+                        }
                 }
                 .searchable(text: $searchText, prompt: "Artists, albums, songs\u{2026}")
             }
@@ -142,7 +153,10 @@ private struct ChrasssetteLibraryView: View {
                 VStack(alignment: .leading, spacing: CassetteSpacing.s) {
                     Text("Your Library")
                         .font(.largeTitle.bold())
-                        .foregroundStyle(.white)
+                        .chrasssetteNeonTitle(
+                            accent: CassetteColors.chrisflixPurple,
+                            glow: 0.42
+                        )
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.bottom, CassetteSpacing.m)
 
