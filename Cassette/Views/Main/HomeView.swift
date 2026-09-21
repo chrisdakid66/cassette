@@ -7,6 +7,10 @@ import SwiftUI
 import SwiftData
 import SwiftSonic
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 struct HomeView: View {
     @Environment(\.appContainer) private var container
     @Environment(\.modelContext) private var modelContext
@@ -36,6 +40,10 @@ struct HomeView: View {
     @State private var showCreatePlaylist = false
     @State private var navigateToSettings = false
     @State private var navigateToAllAlbums = false
+    @AppStorage("chrasssette.profile.activeID") private var activeProfileID = "default"
+    #if os(iOS)
+    @State private var customHomeBannerData: Data?
+    #endif
     // Local mutable copy for smooth drag-to-reorder; synced from @Query on count changes.
     @State private var localPinnedItems: [PinnedItem] = []
     @State private var dropTargetId: String?
@@ -109,36 +117,7 @@ struct HomeView: View {
             ScrollView {
             VStack(alignment: .leading, spacing: CassetteSpacing.xl) {
                 #if os(iOS)
-                ZStack {
-                    Image("ChrasssetteHeader")
-                        .resizable()
-                        .scaledToFill()
-                        .blur(radius: 28)
-                        .opacity(0.34)
-                        .scaleEffect(1.08)
-                        .clipped()
-
-                    Image("ChrasssetteHeader")
-                        .resizable()
-                        .scaledToFit()
-                        .mask(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .clear, location: 0.00),
-                                    .init(color: .black, location: 0.10),
-                                    .init(color: .black, location: 0.78),
-                                    .init(color: .clear, location: 1.00)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, -CassetteSpacing.l)
-                .padding(.top, -72)
-                .ignoresSafeArea(.container, edges: .top)
-                .accessibilityLabel("Chrasssette")
+                homeBanner
                 #endif
                 #if os(iOS)
                 if !visiblePinnedItems.isEmpty {
@@ -255,7 +234,19 @@ struct HomeView: View {
             }
         }
         #endif
-        .onAppear { localPinnedItems = allPinnedItems }
+        .onAppear {
+            localPinnedItems = allPinnedItems
+            #if os(iOS)
+            reloadHomeBanner()
+            #endif
+        }
+        #if os(iOS)
+        .onChange(of: activeProfileID) { _, _ in reloadHomeBanner() }
+        .onReceive(NotificationCenter.default.publisher(for: ChrasssetteHomeBannerStore.didChangeNotification)) { note in
+            guard let changedProfile = note.object as? String, changedProfile == activeProfileID else { return }
+            reloadHomeBanner()
+        }
+        #endif
         .onChange(of: allPinnedItems.count) { _, _ in localPinnedItems = allPinnedItems }
         .task(id: container?.serverState.libraryLoadKey) {
             guard let svc = container?.libraryService else { return }
@@ -264,6 +255,75 @@ struct HomeView: View {
             await viewModel?.load()
         }
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private var homeBanner: some View {
+        ZStack {
+            if let customHomeBannerData,
+               let customImage = UIImage(data: customHomeBannerData) {
+                Image(uiImage: customImage)
+                    .resizable()
+                    .scaledToFill()
+                    .blur(radius: 24)
+                    .opacity(0.24)
+                    .scaleEffect(1.08)
+                    .clipped()
+
+                Image(uiImage: customImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity)
+                    .aspectRatio(540.0 / 302.0, contentMode: .fit)
+                    .clipped()
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black, location: 0.00),
+                                .init(color: .black, location: 0.76),
+                                .init(color: .clear, location: 1.00)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            } else {
+                Image("ChrasssetteHeader")
+                    .resizable()
+                    .scaledToFill()
+                    .blur(radius: 28)
+                    .opacity(0.34)
+                    .scaleEffect(1.08)
+                    .clipped()
+
+                Image("ChrasssetteHeader")
+                    .resizable()
+                    .scaledToFit()
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.00),
+                                .init(color: .black, location: 0.10),
+                                .init(color: .black, location: 0.78),
+                                .init(color: .clear, location: 1.00)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, -CassetteSpacing.l)
+        .padding(.top, -72)
+        .ignoresSafeArea(.container, edges: .top)
+        .accessibilityLabel("Chrasssette home banner")
+    }
+
+    private func reloadHomeBanner() {
+        customHomeBannerData = ChrasssetteHomeBannerStore.loadData(profileID: activeProfileID)
+    }
+    #endif
 
     // MARK: - macOS carousels
 
