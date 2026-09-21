@@ -250,6 +250,12 @@ struct FullPlayerView: View {
 
                 flowGap(Self.playerCoverToTitleGap)
 
+                if !showLyrics && !showingQueue {
+                    artworkDottedDivider
+                        .padding(.horizontal, CassetteSpacing.l)
+                        .padding(.bottom, 10)
+                }
+
                 // The queue shows the title in its header on top, so drop this row when the queue is open —
                 // it would otherwise render a SECOND live TrackInfoSection (duplicate @Query, heart/menu, and
                 // sheet hosts), not just a duplicate title.
@@ -688,6 +694,34 @@ struct FullPlayerView: View {
             .foregroundStyle(surface == .queue ? Color.white.opacity(0.65) : vm.secondaryContentColor)
             .frame(maxWidth: .infinity, alignment: .leading)
             .lineLimit(1)
+    }
+
+    private var artworkDottedDivider: some View {
+        GeometryReader { geo in
+            Path { path in
+                path.move(to: CGPoint(x: 0, y: 1))
+                path.addLine(to: CGPoint(x: geo.size.width, y: 1))
+            }
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        CassetteColors.chrisflixPurple.opacity(0.20),
+                        CassetteColors.chrisflixPurple.opacity(0.72),
+                        vm.secondaryContentColor.opacity(0.38),
+                        CassetteColors.chrisflixPurple.opacity(0.18)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                style: StrokeStyle(
+                    lineWidth: 1.6,
+                    lineCap: .round,
+                    dash: [1.5, 7]
+                )
+            )
+        }
+        .frame(height: 3)
+        .accessibilityHidden(true)
     }
 
     /// Scrubber + transport + volume + bottom toolbar — one instance anchored across both surfaces, so
