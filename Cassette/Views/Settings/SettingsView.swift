@@ -100,10 +100,10 @@ struct SettingsView: View {
             }
 
             Section {
-                LabeledContent("Chrasssette Build", value: "Nook v0.11")
+                LabeledContent("Chrasssette Build", value: "Nook v0.12")
                 LabeledContent("App Version", value: appVersion)
                 LabeledContent("GitHub Run", value: "#\(buildNumber)")
-                LabeledContent("Branch", value: "chrasssette-nook-v0.11")
+                LabeledContent("Branch", value: "chrasssette-nook-v0.12")
             } header: {
                 Text("Build")
             } footer: {
