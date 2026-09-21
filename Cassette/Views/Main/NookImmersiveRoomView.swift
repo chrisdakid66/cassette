@@ -52,6 +52,10 @@ struct NookImmersiveRoomView: View {
     @State private var selectedScene: Scene = .fireside
     @State private var bookshelfCloseUp = false
 
+    @AppStorage("chrasssette.nook.decor.one") private var decorOne = "sparkles"
+    @AppStorage("chrasssette.nook.decor.two") private var decorTwo = "music.note"
+    @AppStorage("chrasssette.nook.decor.three") private var decorThree = "gamecontroller.fill"
+
     private var nookStations: [InternetRadioStation] {
         let order = ["Nook Study", "Nook Café", "Nook Rain", "Nook Late Night"]
         return radioStations
@@ -225,6 +229,7 @@ struct NookImmersiveRoomView: View {
 
     private func firesideRoom(size: CGSize) -> some View {
         ZStack {
+            roomPerspective(size: size, cornerX: size.width * 0.27)
             roomGlow(x: size.width * 0.50, y: size.height * 0.52, radius: 250)
 
             windowView
@@ -232,7 +237,7 @@ struct NookImmersiveRoomView: View {
                 .position(x: size.width * 0.20, y: size.height * 0.33)
 
             wallWeatherPanel
-                .position(x: size.width * 0.82, y: size.height * 0.29)
+                .position(x: size.width * 0.84, y: size.height * 0.22)
 
             fireplaceAssembly
                 .frame(width: min(size.width * 0.68, 420), height: min(size.height * 0.51, 480))
@@ -278,7 +283,7 @@ struct NookImmersiveRoomView: View {
 
             if !hasStarterStations {
                 starterStationButton
-                    .position(x: size.width * 0.50, y: size.height * 0.82)
+                    .position(x: size.width * 0.50, y: size.height * 0.865)
             } else {
                 radioPresetConsole
                     .frame(width: min(size.width - 54, 470))
@@ -291,7 +296,8 @@ struct NookImmersiveRoomView: View {
 
     private func bookshelfRoom(size: CGSize) -> some View {
         ZStack {
-            roomGlow(x: size.width * 0.30, y: size.height * 0.42, radius: 230)
+            roomPerspective(size: size, cornerX: size.width * 0.36)
+            roomGlow(x: size.width * 0.24, y: size.height * 0.48, radius: 230)
 
             if bookshelfCloseUp {
                 closeUpBookshelf
@@ -317,8 +323,14 @@ struct NookImmersiveRoomView: View {
             } else {
                 // Keep the distant shelf as actual room furniture instead of a floating card.
                 distantBookshelf
-                    .frame(width: min(size.width * 0.76, 470), height: min(size.height * 0.56, 500))
-                    .position(x: size.width * 0.50, y: size.height * 0.58)
+                    .frame(width: min(size.width * 0.52, 325), height: min(size.height * 0.58, 500))
+                    .rotation3DEffect(
+                        .degrees(-7),
+                        axis: (x: 0, y: 1, z: 0),
+                        anchor: .leading,
+                        perspective: 0.72
+                    )
+                    .position(x: size.width * 0.27, y: size.height * 0.59)
                     .onTapGesture {
                         withAnimation(.spring(response: 0.44, dampingFraction: 0.88)) {
                             bookshelfCloseUp = true
@@ -328,34 +340,107 @@ struct NookImmersiveRoomView: View {
                 Text("Tap the bookshelf to step closer")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.48))
-                    .position(x: size.width * 0.50, y: size.height * 0.84)
+                    .position(x: size.width * 0.30, y: size.height * 0.86)
             }
         }
     }
 
     private func podcastRoom(size: CGSize) -> some View {
         ZStack {
-            roomGlow(x: size.width * 0.60, y: size.height * 0.46, radius: 210)
+            roomPerspective(size: size, cornerX: size.width * 0.35)
+            roomGlow(x: size.width * 0.58, y: size.height * 0.46, radius: 210)
+
+            decorFrame(systemImage: decorOne)
+                .frame(width: min(size.width * 0.25, 142), height: 92)
+                .position(x: size.width * 0.17, y: size.height * 0.31)
+
+            decorFrame(systemImage: decorTwo)
+                .frame(width: min(size.width * 0.25, 142), height: 92)
+                .position(x: size.width * 0.44, y: size.height * 0.31)
+
+            decorFrame(systemImage: decorThree)
+                .frame(width: min(size.width * 0.22, 128), height: 88)
+                .position(x: size.width * 0.18, y: size.height * 0.44)
 
             // Frontal room perspective: wall decor behind, table edge and legs facing the viewer.
             podcastWallArt
                 .frame(width: min(size.width * 0.34, 190), height: 120)
-                .position(x: size.width * 0.73, y: size.height * 0.34)
+                .position(x: size.width * 0.76, y: size.height * 0.35)
 
             frontProfileTable
                 .frame(width: min(size.width * 0.80, 520), height: min(size.height * 0.36, 310))
                 .position(x: size.width * 0.50, y: size.height * 0.63)
 
             standingMicrophone
-                .position(x: size.width * 0.38, y: size.height * 0.515)
+                .position(x: size.width * 0.38, y: size.height * 0.56)
 
             coffeeMug
-                .position(x: size.width * 0.64, y: size.height * 0.535)
+                .position(x: size.width * 0.64, y: size.height * 0.555)
 
             podcastStatus
                 .frame(width: min(size.width - 60, 460))
                 .position(x: size.width * 0.50, y: size.height * 0.82)
         }
+    }
+
+    private func roomPerspective(size: CGSize, cornerX: CGFloat) -> some View {
+        ZStack {
+            Path { path in
+                path.move(to: .zero)
+                path.addLine(to: CGPoint(x: cornerX, y: 0))
+                path.addLine(to: CGPoint(x: cornerX, y: size.height * 0.78))
+                path.addLine(to: CGPoint(x: 0, y: size.height * 0.88))
+                path.closeSubpath()
+            }
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.12, green: 0.065, blue: 0.075).opacity(0.95),
+                        Color(red: 0.075, green: 0.04, blue: 0.05).opacity(0.88)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+
+            Path { path in
+                path.move(to: CGPoint(x: cornerX, y: 0))
+                path.addLine(to: CGPoint(x: size.width, y: 0))
+                path.addLine(to: CGPoint(x: size.width, y: size.height * 0.88))
+                path.addLine(to: CGPoint(x: cornerX, y: size.height * 0.78))
+                path.closeSubpath()
+            }
+            .fill(Color.black.opacity(0.08))
+
+            Path { path in
+                path.move(to: CGPoint(x: cornerX, y: 0))
+                path.addLine(to: CGPoint(x: cornerX, y: size.height * 0.78))
+            }
+            .stroke(Color.orange.opacity(afterDark ? 0.07 : 0.13), lineWidth: 1.2)
+
+            Path { path in
+                path.move(to: CGPoint(x: 0, y: size.height * 0.88))
+                path.addLine(to: CGPoint(x: cornerX, y: size.height * 0.78))
+                path.addLine(to: CGPoint(x: size.width, y: size.height * 0.88))
+            }
+            .stroke(Color.white.opacity(0.045), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func decorFrame(systemImage: String) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.black.opacity(0.24))
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(neonAccent.opacity(0.22), lineWidth: 1)
+                .padding(6)
+            Image(systemName: systemImage)
+                .font(.system(size: 26, weight: .medium))
+                .foregroundStyle(neonAccent.opacity(0.74))
+                .shadow(color: neonAccent.opacity(0.20), radius: 8)
+        }
+        .shadow(color: .black.opacity(0.24), radius: 6, y: 4)
     }
 
     private var neonAccent: Color {
