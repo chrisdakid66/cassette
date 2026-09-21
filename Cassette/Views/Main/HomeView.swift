@@ -263,12 +263,24 @@ struct HomeView: View {
             Color.black
 
             if let customHomeBannerData {
+                // Custom uploads keep the Steam-style cover-photo behavior. GIFs animate here.
                 AnimatedHomeBannerImageView(data: customHomeBannerData)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                // Default art can be portrait/square. Use a blurred fill behind a fitted foreground
+                // so the whole illustration stays visible instead of being aggressively cropped.
                 Image("ChrasssetteHeader")
                     .resizable()
                     .scaledToFill()
+                    .blur(radius: 28)
+                    .scaleEffect(1.10)
+                    .opacity(0.56)
+
+                Image("ChrasssetteHeader")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
             }
 
             // Keep the cover-photo feel while blending the bottom edge into Home.
