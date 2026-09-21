@@ -292,7 +292,10 @@ struct NookView: View {
             HStack {
                 Text("Music Videos")
                     .font(.cassetteSectionTitle)
-                    .foregroundStyle(.white)
+                    .chrasssetteNeonTitle(
+                        accent: afterDark ? CassetteColors.chrisflixPurple : Color.orange,
+                        glow: afterDark ? 0.72 : 0.18
+                    )
                 Spacer()
                 Image(systemName: "play.rectangle.fill")
                     .foregroundStyle(.white.opacity(0.45))
