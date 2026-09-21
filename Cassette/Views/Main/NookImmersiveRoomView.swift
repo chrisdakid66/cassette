@@ -250,27 +250,29 @@ struct NookImmersiveRoomView: View {
                 .frame(width: min(size.width * 0.68, 420), height: min(size.height * 0.51, 480))
                 .position(x: size.width * 0.50, y: size.height * 0.59)
 
-            // Shared mantel ledge grounds the interactive props in the room.
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.34, green: 0.20, blue: 0.16),
-                            Color(red: 0.19, green: 0.105, blue: 0.09)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+            // One mantel group keeps the jar/radio physically attached to the same furniture.
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.34, green: 0.20, blue: 0.16),
+                                Color(red: 0.19, green: 0.105, blue: 0.09)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
-                .frame(width: min(size.width * 0.48, 280), height: 18)
-                .shadow(color: .black.opacity(0.34), radius: 5, y: 4)
-                .position(x: size.width * 0.50, y: size.height * 0.49)
+                    .frame(width: min(size.width * 0.50, 292), height: 18)
+                    .shadow(color: .black.opacity(0.34), radius: 5, y: 4)
 
-            tipJar
-                .position(x: size.width * 0.40, y: size.height * 0.465)
-
-            mantelRadio
-                .position(x: size.width * 0.60, y: size.height * 0.465)
+                HStack(alignment: .bottom, spacing: 42) {
+                    tipJar
+                    mantelRadio
+                }
+                .offset(y: -12)
+            }
+            .position(x: size.width * 0.50, y: size.height * 0.49)
 
             // The fire itself is a direct interaction target in expanded mode.
             Button(action: onToggleAfterDark) {
@@ -379,15 +381,17 @@ struct NookImmersiveRoomView: View {
             .rotation3DEffect(.degrees(-8), axis: (x: 0, y: 1, z: 0), anchor: .leading, perspective: 0.68)
             .position(x: size.width * 0.79, y: size.height * 0.315)
 
-            frontProfileTable
-                .frame(width: min(size.width * 0.82, 530), height: min(size.height * 0.38, 325))
-                .position(x: size.width * 0.50, y: size.height * 0.655)
+            ZStack {
+                frontProfileTable
 
-            standingMicrophone
-                .position(x: size.width * 0.385, y: size.height * 0.60)
-
-            coffeeMug
-                .position(x: size.width * 0.635, y: size.height * 0.593)
+                HStack(alignment: .bottom, spacing: 74) {
+                    standingMicrophone
+                    coffeeMug
+                }
+                .offset(y: -82)
+            }
+            .frame(width: min(size.width * 0.82, 530), height: min(size.height * 0.38, 325))
+            .position(x: size.width * 0.50, y: size.height * 0.655)
 
             podcastStatus
                 .frame(width: min(size.width - 60, 460))
@@ -396,87 +400,105 @@ struct NookImmersiveRoomView: View {
     }
 
     private func roomPerspective(size: CGSize, cornerX: CGFloat) -> some View {
-        let leftCorner = max(size.width * 0.28, min(cornerX, size.width * 0.40))
-        let rightCorner = size.width * 0.76
-        let floorY = size.height * 0.84
+        // Same room geometry in every Nook scene: a back wall with side walls widening toward the viewer.
+        // The parameter is kept for call-site compatibility while the room now shares one consistent POV.
+        _ = cornerX
+
+        let backLeftTop = size.width * 0.30
+        let backRightTop = size.width * 0.70
+        let backLeftBottom = size.width * 0.20
+        let backRightBottom = size.width * 0.80
+        let floorY = size.height * 0.80
+        let frontFloorY = size.height * 0.92
 
         return ZStack {
-            // Left wall — noticeably cooler purple so the wall reads as a separate plane.
+            // Left wall: muted plum, wedge-shaped instead of a vertical stripe.
             Path { path in
                 path.move(to: .zero)
-                path.addLine(to: CGPoint(x: leftCorner, y: 0))
-                path.addLine(to: CGPoint(x: leftCorner, y: floorY))
-                path.addLine(to: CGPoint(x: 0, y: size.height * 0.91))
+                path.addLine(to: CGPoint(x: backLeftTop, y: 0))
+                path.addLine(to: CGPoint(x: backLeftBottom, y: floorY))
+                path.addLine(to: CGPoint(x: 0, y: frontFloorY))
                 path.closeSubpath()
             }
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.20, green: 0.085, blue: 0.27),
-                        Color(red: 0.115, green: 0.045, blue: 0.17)
+                        Color(red: 0.17, green: 0.08, blue: 0.22),
+                        Color(red: 0.105, green: 0.05, blue: 0.14)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
 
-            // Center wall — warmer aubergine, intentionally distinct from both side walls.
+            // Back wall: warm aubergine, wider near the viewer for real room perspective.
             Path { path in
-                path.move(to: CGPoint(x: leftCorner, y: 0))
-                path.addLine(to: CGPoint(x: rightCorner, y: 0))
-                path.addLine(to: CGPoint(x: rightCorner, y: floorY))
-                path.addLine(to: CGPoint(x: leftCorner, y: floorY))
+                path.move(to: CGPoint(x: backLeftTop, y: 0))
+                path.addLine(to: CGPoint(x: backRightTop, y: 0))
+                path.addLine(to: CGPoint(x: backRightBottom, y: floorY))
+                path.addLine(to: CGPoint(x: backLeftBottom, y: floorY))
                 path.closeSubpath()
             }
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.23, green: 0.085, blue: 0.17),
-                        Color(red: 0.125, green: 0.045, blue: 0.105)
+                        Color(red: 0.19, green: 0.075, blue: 0.15),
+                        Color(red: 0.12, green: 0.05, blue: 0.11)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
             )
 
-            // Right wall — cooler indigo/blue-violet.
+            // Right wall: deep indigo, also wedge-shaped.
             Path { path in
-                path.move(to: CGPoint(x: rightCorner, y: 0))
+                path.move(to: CGPoint(x: backRightTop, y: 0))
                 path.addLine(to: CGPoint(x: size.width, y: 0))
-                path.addLine(to: CGPoint(x: size.width, y: size.height * 0.91))
-                path.addLine(to: CGPoint(x: rightCorner, y: floorY))
+                path.addLine(to: CGPoint(x: size.width, y: frontFloorY))
+                path.addLine(to: CGPoint(x: backRightBottom, y: floorY))
                 path.closeSubpath()
             }
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.075, green: 0.095, blue: 0.245),
-                        Color(red: 0.035, green: 0.045, blue: 0.135)
+                        Color(red: 0.075, green: 0.075, blue: 0.18),
+                        Color(red: 0.045, green: 0.04, blue: 0.115)
                     ],
                     startPoint: .topTrailing,
                     endPoint: .bottomLeading
                 )
             )
 
-            // Floor — darkest plane, with enough violet to stay in the Nook palette.
+            // Floor: broad trapezoid, almost-black violet.
             Path { path in
-                path.move(to: CGPoint(x: 0, y: size.height * 0.91))
-                path.addLine(to: CGPoint(x: leftCorner, y: floorY))
-                path.addLine(to: CGPoint(x: rightCorner, y: floorY))
-                path.addLine(to: CGPoint(x: size.width, y: size.height * 0.91))
+                path.move(to: CGPoint(x: backLeftBottom, y: floorY))
+                path.addLine(to: CGPoint(x: backRightBottom, y: floorY))
+                path.addLine(to: CGPoint(x: size.width, y: frontFloorY))
                 path.addLine(to: CGPoint(x: size.width, y: size.height))
                 path.addLine(to: CGPoint(x: 0, y: size.height))
+                path.addLine(to: CGPoint(x: 0, y: frontFloorY))
                 path.closeSubpath()
             }
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.055, green: 0.035, blue: 0.095),
+                        Color(red: 0.055, green: 0.035, blue: 0.085),
                         Color.black.opacity(0.98)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
+            )
+
+            // A soft shared light wash blends the planes so they read as one room rather than color blocks.
+            LinearGradient(
+                colors: [
+                    Color.clear,
+                    neonAccent.opacity(afterDark ? 0.055 : 0.035),
+                    Color.black.opacity(0.18)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
             )
         }
         .allowsHitTesting(false)
@@ -1053,20 +1075,20 @@ struct NookImmersiveRoomView: View {
     }
 
     private var standingMicrophone: some View {
-        VStack(spacing: -2) {
+        VStack(spacing: -1) {
             Image(systemName: "mic.fill")
-                .font(.system(size: 62, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.88))
-                .shadow(color: CassetteColors.chrisflixPurple.opacity(0.52), radius: 18)
+                .font(.system(size: 42, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.90))
+                .shadow(color: CassetteColors.chrisflixPurple.opacity(0.42), radius: 12)
 
             Capsule()
-                .fill(.white.opacity(0.54))
-                .frame(width: 6, height: 82)
+                .fill(.white.opacity(0.50))
+                .frame(width: 5, height: 34)
 
             Capsule()
                 .fill(.white.opacity(0.40))
-                .frame(width: 62, height: 6)
-                .shadow(color: .black.opacity(0.44), radius: 5, y: 4)
+                .frame(width: 48, height: 6)
+                .shadow(color: .black.opacity(0.40), radius: 4, y: 3)
         }
     }
 
