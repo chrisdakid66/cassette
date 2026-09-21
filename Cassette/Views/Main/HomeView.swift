@@ -260,60 +260,33 @@ struct HomeView: View {
     @ViewBuilder
     private var homeBanner: some View {
         ZStack {
-            if let customHomeBannerData,
-               let customImage = UIImage(data: customHomeBannerData) {
-                Image(uiImage: customImage)
-                    .resizable()
-                    .scaledToFill()
-                    .blur(radius: 24)
-                    .opacity(0.24)
-                    .scaleEffect(1.08)
-                    .clipped()
+            Color.black
 
-                Image(uiImage: customImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .aspectRatio(540.0 / 302.0, contentMode: .fit)
-                    .clipped()
-                    .mask(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .black, location: 0.00),
-                                .init(color: .black, location: 0.76),
-                                .init(color: .clear, location: 1.00)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+            if let customHomeBannerData {
+                AnimatedHomeBannerImageView(data: customHomeBannerData)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Image("ChrasssetteHeader")
                     .resizable()
                     .scaledToFill()
-                    .blur(radius: 28)
-                    .opacity(0.34)
-                    .scaleEffect(1.08)
-                    .clipped()
-
-                Image("ChrasssetteHeader")
-                    .resizable()
-                    .scaledToFit()
-                    .mask(
-                        LinearGradient(
-                            stops: [
-                                .init(color: .clear, location: 0.00),
-                                .init(color: .black, location: 0.10),
-                                .init(color: .black, location: 0.78),
-                                .init(color: .clear, location: 1.00)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
             }
+
+            // Keep the cover-photo feel while blending the bottom edge into Home.
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.00),
+                    .init(color: .clear, location: 0.64),
+                    .init(color: CassetteColors.chrisflixPurpleBlack.opacity(0.38), location: 0.82),
+                    .init(color: CassetteColors.chrisflixPurpleBlack.opacity(0.96), location: 1.00)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .allowsHitTesting(false)
         }
         .frame(maxWidth: .infinity)
+        .aspectRatio(540.0 / 302.0, contentMode: .fit)
+        .clipped()
         .padding(.horizontal, -CassetteSpacing.l)
         .padding(.top, -72)
         .ignoresSafeArea(.container, edges: .top)
