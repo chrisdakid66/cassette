@@ -35,6 +35,19 @@ struct SettingsView: View {
 
     private func form(downloadsVM: DownloadsViewModel) -> some View {
         Form {
+            Section("Personalization") {
+                NavigationLink {
+                    HomeBannerSettingsView()
+                } label: {
+                    settingsCategoryRow(
+                        title: "Home Banner",
+                        subtitle: "Profile-specific Steam-style cover art",
+                        systemImage: "photo.on.rectangle.angled",
+                        color: CassetteColors.chrisflixPurple
+                    )
+                }
+            }
+
             Section("Audio") {
                 NavigationLink {
                     PlaybackSettingsView()
