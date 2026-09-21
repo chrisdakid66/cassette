@@ -244,7 +244,7 @@ struct NookImmersiveRoomView: View {
                 .position(x: size.width * 0.20, y: size.height * 0.33)
 
             wallWeatherPanel
-                .position(x: size.width * 0.86, y: size.height * 0.18)
+                .position(x: size.width * 0.855, y: size.height * 0.145)
 
             fireplaceAssembly
                 .frame(width: min(size.width * 0.68, 420), height: min(size.height * 0.51, 480))
@@ -293,8 +293,8 @@ struct NookImmersiveRoomView: View {
                     .position(x: size.width * 0.50, y: size.height * 0.865)
             } else {
                 radioPresetConsole
-                    .frame(width: min(size.width - 54, 470))
-                    .position(x: size.width * 0.50, y: size.height * 0.875)
+                    .frame(width: min(size.width - 46, 500))
+                    .position(x: size.width * 0.50, y: size.height * 0.905)
             }
         }
         .contentShape(Rectangle())
@@ -330,14 +330,14 @@ struct NookImmersiveRoomView: View {
             } else {
                 // Keep the distant shelf as actual room furniture instead of a floating card.
                 distantBookshelf
-                    .frame(width: min(size.width * 0.52, 325), height: min(size.height * 0.58, 500))
+                    .frame(width: min(size.width * 0.43, 290), height: min(size.height * 0.60, 520))
                     .rotation3DEffect(
-                        .degrees(-7),
+                        .degrees(10),
                         axis: (x: 0, y: 1, z: 0),
-                        anchor: .leading,
-                        perspective: 0.72
+                        anchor: .trailing,
+                        perspective: 0.68
                     )
-                    .position(x: size.width * 0.27, y: size.height * 0.59)
+                    .position(x: size.width * 0.205, y: size.height * 0.60)
                     .onTapGesture {
                         withAnimation(.spring(response: 0.44, dampingFraction: 0.88)) {
                             bookshelfCloseUp = true
@@ -354,33 +354,40 @@ struct NookImmersiveRoomView: View {
             roomGlow(x: size.width * 0.58, y: size.height * 0.46, radius: 210)
 
             decorFrame(systemImage: decorOne, title: "Left Wall")
-                .frame(width: min(size.width * 0.22, 126), height: 84)
-                .rotation3DEffect(.degrees(7), axis: (x: 0, y: 1, z: 0), anchor: .trailing, perspective: 0.72)
-                .position(x: size.width * 0.16, y: size.height * 0.31)
+                .frame(width: min(size.width * 0.21, 122), height: 82)
+                .rotation3DEffect(.degrees(11), axis: (x: 0, y: 1, z: 0), anchor: .trailing, perspective: 0.66)
+                .position(x: size.width * 0.145, y: size.height * 0.285)
 
             decorFrame(systemImage: decorTwo, title: "Center Wall")
-                .frame(width: min(size.width * 0.22, 126), height: 84)
-                .position(x: size.width * 0.43, y: size.height * 0.31)
+                .frame(width: min(size.width * 0.21, 122), height: 82)
+                .position(x: size.width * 0.43, y: size.height * 0.285)
 
             decorFrame(systemImage: decorThree, title: "Lower Wall")
-                .frame(width: min(size.width * 0.20, 118), height: 80)
-                .rotation3DEffect(.degrees(7), axis: (x: 0, y: 1, z: 0), anchor: .trailing, perspective: 0.72)
-                .position(x: size.width * 0.17, y: size.height * 0.43)
+                .frame(width: min(size.width * 0.19, 112), height: 78)
+                .rotation3DEffect(.degrees(11), axis: (x: 0, y: 1, z: 0), anchor: .trailing, perspective: 0.66)
+                .position(x: size.width * 0.15, y: size.height * 0.415)
 
             // Frontal room perspective: wall decor behind, table edge and legs facing the viewer.
-            podcastWallArt
-                .frame(width: min(size.width * 0.34, 190), height: 120)
-                .position(x: size.width * 0.76, y: size.height * 0.35)
+            Button {
+                decorPlaceholderTitle = "Podcast Wall"
+                showDecorPlaceholder = true
+            } label: {
+                podcastWallArt
+            }
+            .buttonStyle(.plain)
+            .frame(width: min(size.width * 0.31, 176), height: 112)
+            .rotation3DEffect(.degrees(-8), axis: (x: 0, y: 1, z: 0), anchor: .leading, perspective: 0.68)
+            .position(x: size.width * 0.79, y: size.height * 0.315)
 
             frontProfileTable
-                .frame(width: min(size.width * 0.80, 520), height: min(size.height * 0.36, 310))
-                .position(x: size.width * 0.50, y: size.height * 0.63)
+                .frame(width: min(size.width * 0.82, 530), height: min(size.height * 0.38, 325))
+                .position(x: size.width * 0.50, y: size.height * 0.655)
 
             standingMicrophone
-                .position(x: size.width * 0.39, y: size.height * 0.585)
+                .position(x: size.width * 0.385, y: size.height * 0.60)
 
             coffeeMug
-                .position(x: size.width * 0.64, y: size.height * 0.575)
+                .position(x: size.width * 0.635, y: size.height * 0.593)
 
             podcastStatus
                 .frame(width: min(size.width - 60, 460))
@@ -389,12 +396,12 @@ struct NookImmersiveRoomView: View {
     }
 
     private func roomPerspective(size: CGSize, cornerX: CGFloat) -> some View {
-        let leftCorner = max(size.width * 0.22, min(cornerX, size.width * 0.38))
+        let leftCorner = max(size.width * 0.28, min(cornerX, size.width * 0.40))
         let rightCorner = size.width * 0.76
         let floorY = size.height * 0.84
 
         return ZStack {
-            // Left wall — cool plum.
+            // Left wall — noticeably cooler purple so the wall reads as a separate plane.
             Path { path in
                 path.move(to: .zero)
                 path.addLine(to: CGPoint(x: leftCorner, y: 0))
@@ -405,15 +412,15 @@ struct NookImmersiveRoomView: View {
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.16, green: 0.08, blue: 0.20),
-                        Color(red: 0.095, green: 0.045, blue: 0.13)
+                        Color(red: 0.20, green: 0.085, blue: 0.27),
+                        Color(red: 0.115, green: 0.045, blue: 0.17)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
 
-            // Center wall — warmer aubergine so the corner reads without guide lines.
+            // Center wall — warmer aubergine, intentionally distinct from both side walls.
             Path { path in
                 path.move(to: CGPoint(x: leftCorner, y: 0))
                 path.addLine(to: CGPoint(x: rightCorner, y: 0))
@@ -424,15 +431,15 @@ struct NookImmersiveRoomView: View {
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.18, green: 0.075, blue: 0.15),
-                        Color(red: 0.105, green: 0.045, blue: 0.10)
+                        Color(red: 0.23, green: 0.085, blue: 0.17),
+                        Color(red: 0.125, green: 0.045, blue: 0.105)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
             )
 
-            // Right wall — blue-violet/indigo.
+            // Right wall — cooler indigo/blue-violet.
             Path { path in
                 path.move(to: CGPoint(x: rightCorner, y: 0))
                 path.addLine(to: CGPoint(x: size.width, y: 0))
@@ -443,15 +450,15 @@ struct NookImmersiveRoomView: View {
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.075, green: 0.075, blue: 0.18),
-                        Color(red: 0.04, green: 0.035, blue: 0.10)
+                        Color(red: 0.075, green: 0.095, blue: 0.245),
+                        Color(red: 0.035, green: 0.045, blue: 0.135)
                     ],
                     startPoint: .topTrailing,
                     endPoint: .bottomLeading
                 )
             )
 
-            // Dark floor — no visible construction-line strokes.
+            // Floor — darkest plane, with enough violet to stay in the Nook palette.
             Path { path in
                 path.move(to: CGPoint(x: 0, y: size.height * 0.91))
                 path.addLine(to: CGPoint(x: leftCorner, y: floorY))
@@ -464,8 +471,8 @@ struct NookImmersiveRoomView: View {
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.055, green: 0.035, blue: 0.075),
-                        Color.black.opacity(0.96)
+                        Color(red: 0.055, green: 0.035, blue: 0.095),
+                        Color.black.opacity(0.98)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -963,12 +970,12 @@ struct NookImmersiveRoomView: View {
     private var frontProfileTable: some View {
         GeometryReader { geo in
             ZStack(alignment: .top) {
-                // Perspective tabletop with visible thickness and a softer front edge.
+                // Perspective tabletop.
                 Path { path in
                     let w = geo.size.width
                     let h = geo.size.height * 0.30
-                    path.move(to: CGPoint(x: w * 0.13, y: h * 0.10))
-                    path.addLine(to: CGPoint(x: w * 0.87, y: h * 0.10))
+                    path.move(to: CGPoint(x: w * 0.16, y: h * 0.08))
+                    path.addLine(to: CGPoint(x: w * 0.84, y: h * 0.08))
                     path.addLine(to: CGPoint(x: w * 0.97, y: h * 0.88))
                     path.addLine(to: CGPoint(x: w * 0.03, y: h * 0.88))
                     path.closeSubpath()
@@ -976,63 +983,71 @@ struct NookImmersiveRoomView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.40, green: 0.22, blue: 0.16),
-                            Color(red: 0.26, green: 0.13, blue: 0.12)
+                            Color(red: 0.42, green: 0.225, blue: 0.17),
+                            Color(red: 0.23, green: 0.115, blue: 0.12)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-                .shadow(color: .black.opacity(0.42), radius: 16, y: 10)
+                .shadow(color: .black.opacity(0.46), radius: 17, y: 11)
 
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                // Visible front apron gives the table actual thickness.
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.25, green: 0.13, blue: 0.11),
-                                Color(red: 0.14, green: 0.07, blue: 0.08)
+                                Color(red: 0.27, green: 0.14, blue: 0.13),
+                                Color(red: 0.135, green: 0.065, blue: 0.085)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
                         )
                     )
-                    .frame(width: geo.size.width * 0.90, height: geo.size.height * 0.10)
+                    .frame(width: geo.size.width * 0.90, height: geo.size.height * 0.11)
                     .offset(y: geo.size.height * 0.255)
 
                 HStack {
-                    RoundedRectangle(cornerRadius: 7)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 0.27, green: 0.14, blue: 0.12),
-                                    Color(red: 0.11, green: 0.06, blue: 0.075)
+                                    Color(red: 0.29, green: 0.15, blue: 0.13),
+                                    Color(red: 0.10, green: 0.05, blue: 0.075)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
-                        .frame(width: 42)
-                        .rotationEffect(.degrees(1.8))
+                        .frame(width: 40)
+                        .rotationEffect(.degrees(3))
 
                     Spacer()
 
-                    RoundedRectangle(cornerRadius: 7)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 0.27, green: 0.14, blue: 0.12),
-                                    Color(red: 0.11, green: 0.06, blue: 0.075)
+                                    Color(red: 0.29, green: 0.15, blue: 0.13),
+                                    Color(red: 0.10, green: 0.05, blue: 0.075)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
-                        .frame(width: 42)
-                        .rotationEffect(.degrees(-1.8))
+                        .frame(width: 40)
+                        .rotationEffect(.degrees(-3))
                 }
-                .padding(.horizontal, geo.size.width * 0.15)
+                .padding(.horizontal, geo.size.width * 0.16)
                 .padding(.top, geo.size.height * 0.31)
-                .frame(height: geo.size.height * 0.95)
+                .frame(height: geo.size.height * 0.96)
+
+                // Soft contact shadow under the table keeps it from floating.
+                Ellipse()
+                    .fill(Color.black.opacity(0.26))
+                    .frame(width: geo.size.width * 0.62, height: 30)
+                    .offset(y: geo.size.height * 0.86)
+                    .blur(radius: 7)
             }
         }
     }
