@@ -400,79 +400,68 @@ struct NookImmersiveRoomView: View {
     }
 
     private func roomPerspective(size: CGSize, cornerX: CGFloat) -> some View {
-        // Same room geometry in every Nook scene: a back wall with side walls widening toward the viewer.
-        // The parameter is kept for call-site compatibility while the room now shares one consistent POV.
+        // 180° room: one uninterrupted center wall, with two-tone side walls tapering
+        // toward it. This avoids the vertical-column look from the earlier passes.
         _ = cornerX
 
-        let backLeftTop = size.width * 0.30
-        let backRightTop = size.width * 0.70
-        let backLeftBottom = size.width * 0.20
-        let backRightBottom = size.width * 0.80
-        let floorY = size.height * 0.80
+        let leftBackX = size.width * 0.23
+        let rightBackX = size.width * 0.77
+        let wallFloorY = size.height * 0.82
         let frontFloorY = size.height * 0.92
 
         return ZStack {
-            // Left wall: muted plum, wedge-shaped instead of a vertical stripe.
+            // Main/back wall — one continuous color family through the whole middle.
+            LinearGradient(
+                colors: [
+                    Color(red: 0.165, green: 0.070, blue: 0.145),
+                    Color(red: 0.125, green: 0.050, blue: 0.115)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            // Left wall — exactly two coordinated plum shades blended across one plane.
             Path { path in
                 path.move(to: .zero)
-                path.addLine(to: CGPoint(x: backLeftTop, y: 0))
-                path.addLine(to: CGPoint(x: backLeftBottom, y: floorY))
+                path.addLine(to: CGPoint(x: leftBackX, y: 0))
+                path.addLine(to: CGPoint(x: leftBackX * 0.72, y: wallFloorY))
                 path.addLine(to: CGPoint(x: 0, y: frontFloorY))
                 path.closeSubpath()
             }
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.17, green: 0.08, blue: 0.22),
-                        Color(red: 0.105, green: 0.05, blue: 0.14)
+                        Color(red: 0.205, green: 0.095, blue: 0.285),
+                        Color(red: 0.105, green: 0.050, blue: 0.160)
                     ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .leading,
+                    endPoint: .trailing
                 )
             )
 
-            // Back wall: warm aubergine, wider near the viewer for real room perspective.
+            // Right wall — exactly two indigo/blue-violet shades across one plane.
             Path { path in
-                path.move(to: CGPoint(x: backLeftTop, y: 0))
-                path.addLine(to: CGPoint(x: backRightTop, y: 0))
-                path.addLine(to: CGPoint(x: backRightBottom, y: floorY))
-                path.addLine(to: CGPoint(x: backLeftBottom, y: floorY))
-                path.closeSubpath()
-            }
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.19, green: 0.075, blue: 0.15),
-                        Color(red: 0.12, green: 0.05, blue: 0.11)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-
-            // Right wall: deep indigo, also wedge-shaped.
-            Path { path in
-                path.move(to: CGPoint(x: backRightTop, y: 0))
+                path.move(to: CGPoint(x: rightBackX, y: 0))
                 path.addLine(to: CGPoint(x: size.width, y: 0))
                 path.addLine(to: CGPoint(x: size.width, y: frontFloorY))
-                path.addLine(to: CGPoint(x: backRightBottom, y: floorY))
+                path.addLine(to: CGPoint(x: size.width - ((size.width - rightBackX) * 0.72), y: wallFloorY))
                 path.closeSubpath()
             }
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.075, green: 0.075, blue: 0.18),
-                        Color(red: 0.045, green: 0.04, blue: 0.115)
+                        Color(red: 0.090, green: 0.105, blue: 0.255),
+                        Color(red: 0.040, green: 0.045, blue: 0.125)
                     ],
-                    startPoint: .topTrailing,
-                    endPoint: .bottomLeading
+                    startPoint: .leading,
+                    endPoint: .trailing
                 )
             )
 
-            // Floor: broad trapezoid, almost-black violet.
+            // Floor widens toward the viewer and ties the three wall planes together.
             Path { path in
-                path.move(to: CGPoint(x: backLeftBottom, y: floorY))
-                path.addLine(to: CGPoint(x: backRightBottom, y: floorY))
+                path.move(to: CGPoint(x: leftBackX * 0.72, y: wallFloorY))
+                path.addLine(to: CGPoint(x: size.width - ((size.width - rightBackX) * 0.72), y: wallFloorY))
                 path.addLine(to: CGPoint(x: size.width, y: frontFloorY))
                 path.addLine(to: CGPoint(x: size.width, y: size.height))
                 path.addLine(to: CGPoint(x: 0, y: size.height))
@@ -482,20 +471,20 @@ struct NookImmersiveRoomView: View {
             .fill(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.055, green: 0.035, blue: 0.085),
-                        Color.black.opacity(0.98)
+                        Color(red: 0.055, green: 0.035, blue: 0.080),
+                        Color.black.opacity(0.985)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
             )
 
-            // A soft shared light wash blends the planes so they read as one room rather than color blocks.
+            // Low-contrast ambient wash: blends surfaces without introducing new bands.
             LinearGradient(
                 colors: [
                     Color.clear,
-                    neonAccent.opacity(afterDark ? 0.055 : 0.035),
-                    Color.black.opacity(0.18)
+                    neonAccent.opacity(afterDark ? 0.045 : 0.028),
+                    Color.black.opacity(0.15)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
