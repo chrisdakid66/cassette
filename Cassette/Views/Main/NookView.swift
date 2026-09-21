@@ -972,8 +972,6 @@ private struct NookFireplaceScene: View {
             rainyWindow
                 .offset(x: -92, y: -65)
 
-            bookshelf
-                .offset(x: 103, y: -50)
 
             fireplace
                 .offset(y: 29)
