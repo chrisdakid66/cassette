@@ -400,68 +400,61 @@ struct NookImmersiveRoomView: View {
     }
 
     private func roomPerspective(size: CGSize, cornerX: CGFloat) -> some View {
-        // 180° room: one uninterrupted center wall, with two-tone side walls tapering
-        // toward it. This avoids the vertical-column look from the earlier passes.
+        // 180° room color map:
+        // left wall = 75% #341849 + inner 25% #2A1225
+        // center wall = 100% #2A1225
+        // right wall = inner 25% #2A1225 + outer 75% #171B41
+        // The center color is the base wall, so the inner 25% of both side walls naturally
+        // blends into the middle without creating extra vertical color bands.
         _ = cornerX
+
+        let center = Color(red: 42.0 / 255.0, green: 18.0 / 255.0, blue: 37.0 / 255.0)   // #2A1225
+        let left = Color(red: 52.0 / 255.0, green: 24.0 / 255.0, blue: 73.0 / 255.0)     // #341849
+        let right = Color(red: 23.0 / 255.0, green: 27.0 / 255.0, blue: 65.0 / 255.0)    // #171B41
 
         let leftBackX = size.width * 0.23
         let rightBackX = size.width * 0.77
         let wallFloorY = size.height * 0.82
         let frontFloorY = size.height * 0.92
 
-        return ZStack {
-            // Main/back wall — one continuous color family through the whole middle.
-            LinearGradient(
-                colors: [
-                    Color(red: 0.165, green: 0.070, blue: 0.145),
-                    Color(red: 0.125, green: 0.050, blue: 0.115)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+        // Split each side wall 75/25 from the outside edge toward the center.
+        let leftOuterTopX = leftBackX * 0.75
+        let leftBottomEdgeX = leftBackX * 0.72
+        let leftOuterBottomX = leftBottomEdgeX * 0.75
 
-            // Left wall — exactly two coordinated plum shades blended across one plane.
+        let rightWallWidthTop = size.width - rightBackX
+        let rightOuterTopX = size.width - (rightWallWidthTop * 0.75)
+        let rightBottomEdgeX = size.width - ((size.width - rightBackX) * 0.72)
+        let rightOuterBottomX = size.width - ((size.width - rightBottomEdgeX) * 0.75)
+
+        return ZStack {
+            // Entire wall field starts as the continuous center/main wall color.
+            center
+
+            // Outer 75% of the left wall.
             Path { path in
                 path.move(to: .zero)
-                path.addLine(to: CGPoint(x: leftBackX, y: 0))
-                path.addLine(to: CGPoint(x: leftBackX * 0.72, y: wallFloorY))
+                path.addLine(to: CGPoint(x: leftOuterTopX, y: 0))
+                path.addLine(to: CGPoint(x: leftOuterBottomX, y: wallFloorY))
                 path.addLine(to: CGPoint(x: 0, y: frontFloorY))
                 path.closeSubpath()
             }
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.205, green: 0.095, blue: 0.285),
-                        Color(red: 0.105, green: 0.050, blue: 0.160)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            .fill(left)
 
-            // Right wall — exactly two indigo/blue-violet shades across one plane.
+            // Outer 75% of the right wall.
             Path { path in
-                path.move(to: CGPoint(x: rightBackX, y: 0))
+                path.move(to: CGPoint(x: rightOuterTopX, y: 0))
                 path.addLine(to: CGPoint(x: size.width, y: 0))
                 path.addLine(to: CGPoint(x: size.width, y: frontFloorY))
-                path.addLine(to: CGPoint(x: size.width - ((size.width - rightBackX) * 0.72), y: wallFloorY))
+                path.addLine(to: CGPoint(x: rightOuterBottomX, y: wallFloorY))
                 path.closeSubpath()
             }
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.090, green: 0.105, blue: 0.255),
-                        Color(red: 0.040, green: 0.045, blue: 0.125)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            .fill(right)
 
-            // Floor widens toward the viewer and ties the three wall planes together.
+            // Floor widens toward the viewer; wall color map above remains exactly three colors.
             Path { path in
-                path.move(to: CGPoint(x: leftBackX * 0.72, y: wallFloorY))
-                path.addLine(to: CGPoint(x: size.width - ((size.width - rightBackX) * 0.72), y: wallFloorY))
+                path.move(to: CGPoint(x: leftBottomEdgeX, y: wallFloorY))
+                path.addLine(to: CGPoint(x: rightBottomEdgeX, y: wallFloorY))
                 path.addLine(to: CGPoint(x: size.width, y: frontFloorY))
                 path.addLine(to: CGPoint(x: size.width, y: size.height))
                 path.addLine(to: CGPoint(x: 0, y: size.height))
@@ -477,17 +470,6 @@ struct NookImmersiveRoomView: View {
                     startPoint: .top,
                     endPoint: .bottom
                 )
-            )
-
-            // Low-contrast ambient wash: blends surfaces without introducing new bands.
-            LinearGradient(
-                colors: [
-                    Color.clear,
-                    neonAccent.opacity(afterDark ? 0.045 : 0.028),
-                    Color.black.opacity(0.15)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
             )
         }
         .allowsHitTesting(false)
