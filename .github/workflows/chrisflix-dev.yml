@@ -2,7 +2,7 @@ name: Chrasssette Dev IPA
 
 on:
   push:
-    branches: [chrisflix-v0.1, chrasssette-v0.2, chrasssette-v0.2.1, chrasssette-eq, chrasssette-v0.2.2, chrasssette-v0.2.3, chrasssette-nook, chrasssette-nook-v0.2, chrasssette-nook-v0.3, chrasssette-nook-v0.4, chrasssette-nook-v0.5, chrasssette-nook-v0.6, chrasssette-nook-v0.7]
+    branches: [chrisflix-v0.1, chrasssette-v0.2, chrasssette-v0.2.1, chrasssette-eq, chrasssette-v0.2.2, chrasssette-v0.2.3, chrasssette-nook, chrasssette-nook-v0.2, chrasssette-nook-v0.3, chrasssette-nook-v0.4, chrasssette-nook-v0.5, chrasssette-nook-v0.6, chrasssette-nook-v0.7, chrasssette-nook-v0.8]
   workflow_dispatch: {}
 
 permissions:
@@ -54,12 +54,12 @@ jobs:
           rm -rf Payload
           mkdir Payload
           cp -R "$APP_NAME-iOS.xcarchive/Products/Applications/$APP_NAME.app" Payload/
-          zip -qry "Chrasssette-Nook-v0.7.ipa" Payload
+          zip -qry "Chrasssette-Nook-v0.8.ipa" Payload
           rm -rf Payload
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Chrasssette-Nook-v0.7-${{ github.run_number }}
-          path: ${{ runner.temp }}/Chrasssette-Nook-v0.7.ipa
+          name: Chrasssette-Nook-v0.8-${{ github.run_number }}
+          path: ${{ runner.temp }}/Chrasssette-Nook-v0.8.ipa
           retention-days: 14
