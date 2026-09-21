@@ -24,6 +24,8 @@ final class NookWeatherModel: NSObject, ObservableObject {
 
     private let locationManager = CLLocationManager()
     private var hasRequestedLocation = false
+    private var lastUpdatedAt: Date?
+    private let refreshInterval: TimeInterval = 30 * 60
 
     override init() {
         super.init()
@@ -31,7 +33,13 @@ final class NookWeatherModel: NSObject, ObservableObject {
         locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
     }
 
-    func refresh() {
+    func refresh(force: Bool = false) {
+        if !force,
+           let lastUpdatedAt,
+           Date().timeIntervalSince(lastUpdatedAt) < refreshInterval {
+            return
+        }
+
         permissionDenied = false
         switch locationManager.authorizationStatus {
         case .notDetermined:
@@ -93,9 +101,14 @@ final class NookWeatherModel: NSObject, ObservableObject {
                 isDay: decoded.current.is_day == 1
             )
             statusText = condition.text
+            lastUpdatedAt = Date()
         } catch {
             statusText = "Weather unavailable"
         }
+    }
+
+    func refreshIfStale() {
+        refresh(force: false)
     }
 
     private static func describe(code: Int, isDay: Bool) -> (text: String, symbol: String) {
