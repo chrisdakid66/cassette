@@ -55,7 +55,7 @@ struct FullPlayerView: View {
     /// Horizontal margin around the cover (smaller = wider cover).
     private static let playerCoverHPadding: CGFloat = CassetteSpacing.m
     /// Minimum cover→title gap; the flowing layout's flexible Spacers distribute the rest to fill the screen.
-    private static let playerCoverToTitleGap: CGFloat = CassetteSpacing.m
+    private static let playerCoverToTitleGap: CGFloat = 26
     /// Vertical breathing room between the flowing controls (scrubber ↔ transport ↔ volume). Raise to spread.
     private static let playerControlsSpacing: CGFloat = CassetteSpacing.s
     #endif
@@ -362,7 +362,7 @@ struct FullPlayerView: View {
                 // controls off-screen. Flexible (nil) on the queue side so matchedGeometry shrinks it to 56pt.
                 // Fill the width and run slightly TALLER than square (1.12×) so the cover has more presence and
                 // its bottom melt starts lower down the screen. Definite size (not greedy) keeps the controls placed.
-                .frame(width: isSource ? min(geo.size.width, geo.size.height) : nil, height: isSource ? min(geo.size.width, geo.size.height) * 1.20 : nil)
+                .frame(width: isSource ? min(geo.size.width, geo.size.height) : nil, height: isSource ? min(geo.size.width, geo.size.height) * 1.24 : nil)
                 // Rounded corners on the small flown cover in the queue header; sharp full-bleed on the player.
                 .clipShape(RoundedRectangle(cornerRadius: isSource ? 0 : CassetteCornerRadius.standard))
                 // Light blurred melt at the bottom: a thin strip of the cover blurs and fades into the dominant
@@ -374,13 +374,14 @@ struct FullPlayerView: View {
                             // warmed it) instead of a fresh per-track download via the view model.
                             CoverArtView(id: coverArtId, size: 1000)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .blur(radius: 16)
+                                .blur(radius: 22)
                                 .clipped()
                             LinearGradient(
                                 stops: [
-                                    .init(color: .clear, location: 0.62),
-                                    .init(color: dominant.opacity(0.70), location: 0.82),
-                                    .init(color: CassetteColors.chrisflixPurpleBlack, location: 1.0),
+                                    .init(color: .clear, location: 0.50),
+                                    .init(color: dominant.opacity(0.34), location: 0.66),
+                                    .init(color: dominant.opacity(0.74), location: 0.82),
+                                    .init(color: CassetteColors.chrisflixPurpleBlack.opacity(0.96), location: 1.0),
                                 ],
                                 startPoint: .top, endPoint: .bottom
                             )
@@ -388,8 +389,9 @@ struct FullPlayerView: View {
                         .mask(
                             LinearGradient(
                                 stops: [
-                                    .init(color: .clear, location: 0.60),
-                                    .init(color: .black.opacity(0.76), location: 0.80),
+                                    .init(color: .clear, location: 0.47),
+                                    .init(color: .black.opacity(0.46), location: 0.62),
+                                    .init(color: .black.opacity(0.86), location: 0.80),
                                     .init(color: .black, location: 1.0),
                                 ],
                                 startPoint: .top, endPoint: .bottom
