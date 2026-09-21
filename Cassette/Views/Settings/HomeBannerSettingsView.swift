@@ -37,7 +37,7 @@ struct HomeBannerSettingsView: View {
             } header: {
                 Text("Home Banner")
             } footer: {
-                Text("Applies to the current Chrasssette profile. Wide images work best; Discord/Steam-style banners around 16:9 are a great fit. Animated GIF playback can come later.")
+                Text("Applies to the current Chrasssette profile. Wide images work best; Discord/Steam-style banners around 16:9 are a great fit. Animated GIFs are supported.")
             }
 
             Section("Profile Scope") {
@@ -71,13 +71,12 @@ struct HomeBannerSettingsView: View {
     @ViewBuilder
     private var bannerPreview: some View {
         #if canImport(UIKit)
-        if let bannerData, let image = UIImage(data: bannerData) {
+        if let bannerData {
             ZStack(alignment: .bottomLeading) {
                 Color.black
 
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
+                AnimatedHomeBannerImageView(data: bannerData)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 LinearGradient(
                     colors: [.clear, Color.black.opacity(0.62)],
@@ -85,10 +84,20 @@ struct HomeBannerSettingsView: View {
                     endPoint: .bottom
                 )
 
-                Text("Home preview")
-                    .font(.headline.bold())
-                    .foregroundStyle(.white)
-                    .padding(12)
+                HStack(spacing: 6) {
+                    Text("Home preview")
+                        .font(.headline.bold())
+
+                    if AnimatedHomeBannerImageView.isAnimatedGIF(bannerData) {
+                        Label("GIF", systemImage: "sparkles")
+                            .font(.caption.bold())
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(.black.opacity(0.38), in: Capsule())
+                    }
+                }
+                .foregroundStyle(.white)
+                .padding(12)
             }
             .frame(maxWidth: .infinity)
             .aspectRatio(540.0 / 302.0, contentMode: .fit)
@@ -145,7 +154,13 @@ struct HomeBannerSettingsView: View {
 
             try ChrasssetteHomeBannerStore.save(data, profileID: activeProfileID)
             bannerData = data
+            #if canImport(UIKit)
+            statusMessage = AnimatedHomeBannerImageView.isAnimatedGIF(data)
+                ? "Animated GIF banner updated for this profile."
+                : "Banner updated for this profile."
+            #else
             statusMessage = "Banner updated for this profile."
+            #endif
         } catch {
             statusMessage = "Couldn’t import that banner: \(error.localizedDescription)"
         }
