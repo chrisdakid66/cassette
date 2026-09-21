@@ -55,7 +55,7 @@ struct FullPlayerView: View {
     /// Horizontal margin around the cover (smaller = wider cover).
     private static let playerCoverHPadding: CGFloat = CassetteSpacing.m
     /// Minimum cover→title gap; the flowing layout's flexible Spacers distribute the rest to fill the screen.
-    private static let playerCoverToTitleGap: CGFloat = 26
+    private static let playerCoverToTitleGap: CGFloat = 14
     /// Vertical breathing room between the flowing controls (scrubber ↔ transport ↔ volume). Raise to spread.
     private static let playerControlsSpacing: CGFloat = CassetteSpacing.s
     #endif
@@ -250,12 +250,6 @@ struct FullPlayerView: View {
 
                 flowGap(Self.playerCoverToTitleGap)
 
-                if !showLyrics && !showingQueue {
-                    artworkDottedDivider
-                        .padding(.horizontal, CassetteSpacing.l)
-                        .padding(.bottom, 10)
-                }
-
                 // The queue shows the title in its header on top, so drop this row when the queue is open —
                 // it would otherwise render a SECOND live TrackInfoSection (duplicate @Query, heart/menu, and
                 // sheet hosts), not just a duplicate title.
@@ -368,7 +362,7 @@ struct FullPlayerView: View {
                 // controls off-screen. Flexible (nil) on the queue side so matchedGeometry shrinks it to 56pt.
                 // Fill the width and run slightly TALLER than square (1.12×) so the cover has more presence and
                 // its bottom melt starts lower down the screen. Definite size (not greedy) keeps the controls placed.
-                .frame(width: isSource ? min(geo.size.width, geo.size.height) : nil, height: isSource ? min(geo.size.width, geo.size.height) * 1.24 : nil)
+                .frame(width: isSource ? min(geo.size.width, geo.size.height) : nil, height: isSource ? min(geo.size.width, geo.size.height) * 1.40 : nil)
                 // Rounded corners on the small flown cover in the queue header; sharp full-bleed on the player.
                 .clipShape(RoundedRectangle(cornerRadius: isSource ? 0 : CassetteCornerRadius.standard))
                 // Light blurred melt at the bottom: a thin strip of the cover blurs and fades into the dominant
@@ -384,10 +378,10 @@ struct FullPlayerView: View {
                                 .clipped()
                             LinearGradient(
                                 stops: [
-                                    .init(color: .clear, location: 0.50),
-                                    .init(color: dominant.opacity(0.34), location: 0.66),
-                                    .init(color: dominant.opacity(0.74), location: 0.82),
-                                    .init(color: CassetteColors.chrisflixPurpleBlack.opacity(0.96), location: 1.0),
+                                    .init(color: .clear, location: 0.48),
+                                    .init(color: dominant.opacity(0.26), location: 0.64),
+                                    .init(color: dominant.opacity(0.68), location: 0.83),
+                                    .init(color: CassetteColors.chrisflixPurpleBlack.opacity(0.98), location: 1.0),
                                 ],
                                 startPoint: .top, endPoint: .bottom
                             )
@@ -395,9 +389,9 @@ struct FullPlayerView: View {
                         .mask(
                             LinearGradient(
                                 stops: [
-                                    .init(color: .clear, location: 0.47),
-                                    .init(color: .black.opacity(0.46), location: 0.62),
-                                    .init(color: .black.opacity(0.86), location: 0.80),
+                                    .init(color: .clear, location: 0.45),
+                                    .init(color: .black.opacity(0.38), location: 0.62),
+                                    .init(color: .black.opacity(0.82), location: 0.82),
                                     .init(color: .black, location: 1.0),
                                 ],
                                 startPoint: .top, endPoint: .bottom
@@ -694,34 +688,6 @@ struct FullPlayerView: View {
             .foregroundStyle(surface == .queue ? Color.white.opacity(0.65) : vm.secondaryContentColor)
             .frame(maxWidth: .infinity, alignment: .leading)
             .lineLimit(1)
-    }
-
-    private var artworkDottedDivider: some View {
-        GeometryReader { geo in
-            Path { path in
-                path.move(to: CGPoint(x: 0, y: 1))
-                path.addLine(to: CGPoint(x: geo.size.width, y: 1))
-            }
-            .stroke(
-                LinearGradient(
-                    colors: [
-                        CassetteColors.chrisflixPurple.opacity(0.20),
-                        CassetteColors.chrisflixPurple.opacity(0.72),
-                        vm.secondaryContentColor.opacity(0.38),
-                        CassetteColors.chrisflixPurple.opacity(0.18)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ),
-                style: StrokeStyle(
-                    lineWidth: 1.6,
-                    lineCap: .round,
-                    dash: [1.5, 7]
-                )
-            )
-        }
-        .frame(height: 3)
-        .accessibilityHidden(true)
     }
 
     /// Scrubber + transport + volume + bottom toolbar — one instance anchored across both surfaces, so
