@@ -155,13 +155,17 @@ struct NookImmersiveRoomView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(afterDark ? "Nook After Dark" : "The Nook")
                         .font(.system(size: 28, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
-                        .shadow(color: afterDark ? CassetteColors.chrisflixPurple.opacity(0.92) : .clear, radius: 14)
+                        .chrasssetteNeonTitle(
+                            accent: afterDark ? CassetteColors.chrisflixPurple : Color.orange,
+                            glow: afterDark ? 0.94 : 0.30
+                        )
 
                     Text(selectedScene.title)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(neonAccent.opacity(0.82))
-                        .shadow(color: afterDark ? CassetteColors.chrisflixPurple.opacity(0.62) : .clear, radius: 7)
+                        .font(.caption.weight(.bold))
+                        .chrasssetteNeonTitle(
+                            accent: afterDark ? CassetteColors.chrisflixPurple : Color.orange,
+                            glow: afterDark ? 0.72 : 0.22
+                        )
                 }
             }
 
@@ -225,21 +229,46 @@ struct NookImmersiveRoomView: View {
 
             windowView
                 .frame(width: min(size.width * 0.32, 180), height: min(size.height * 0.21, 170))
-                .position(x: size.width * 0.20, y: size.height * 0.32)
+                .position(x: size.width * 0.20, y: size.height * 0.33)
 
-            wallShelf
-                .frame(width: min(size.width * 0.22, 126), height: 120)
-                .position(x: size.width * 0.82, y: size.height * 0.30)
+            wallWeatherPanel
+                .position(x: size.width * 0.82, y: size.height * 0.29)
 
             fireplaceAssembly
                 .frame(width: min(size.width * 0.68, 420), height: min(size.height * 0.51, 480))
                 .position(x: size.width * 0.50, y: size.height * 0.59)
 
+            // Shared mantel ledge grounds the interactive props in the room.
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.34, green: 0.20, blue: 0.16),
+                            Color(red: 0.19, green: 0.105, blue: 0.09)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: min(size.width * 0.48, 280), height: 18)
+                .shadow(color: .black.opacity(0.34), radius: 5, y: 4)
+                .position(x: size.width * 0.50, y: size.height * 0.49)
+
             tipJar
-                .position(x: size.width * 0.41, y: size.height * 0.42)
+                .position(x: size.width * 0.40, y: size.height * 0.465)
 
             mantelRadio
-                .position(x: size.width * 0.61, y: size.height * 0.42)
+                .position(x: size.width * 0.60, y: size.height * 0.465)
+
+            // The fire itself is a direct interaction target in expanded mode.
+            Button(action: onToggleAfterDark) {
+                Color.clear
+                    .frame(width: min(size.width * 0.27, 170), height: min(size.height * 0.19, 170))
+                    .contentShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+            .position(x: size.width * 0.50, y: size.height * 0.675)
+            .accessibilityLabel(afterDark ? "Restore fireside lighting" : "Dim the Nook")
 
             if afterDark {
                 sleepingCat
@@ -247,15 +276,12 @@ struct NookImmersiveRoomView: View {
                     .transition(.scale.combined(with: .opacity))
             }
 
-            weatherChip
-                .position(x: size.width * 0.82, y: size.height * 0.18)
-
             if !hasStarterStations {
                 starterStationButton
-                    .position(x: size.width * 0.50, y: size.height * 0.81)
+                    .position(x: size.width * 0.50, y: size.height * 0.82)
             } else {
-                radioPresetStrip
-                    .frame(width: min(size.width - 44, 470))
+                radioPresetConsole
+                    .frame(width: min(size.width - 54, 470))
                     .position(x: size.width * 0.50, y: size.height * 0.82)
             }
         }
@@ -289,15 +315,10 @@ struct NookImmersiveRoomView: View {
                 .buttonStyle(.plain)
                 .position(x: size.width * 0.80, y: size.height * 0.18)
             } else {
-                Image(systemName: "lamp.desk.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(.orange.opacity(0.84))
-                    .shadow(color: .orange.opacity(0.44), radius: 24)
-                    .position(x: size.width * 0.20, y: size.height * 0.37)
-
+                // Keep the distant shelf as actual room furniture instead of a floating card.
                 distantBookshelf
-                    .frame(width: min(size.width * 0.68, 430), height: min(size.height * 0.52, 470))
-                    .position(x: size.width * 0.58, y: size.height * 0.58)
+                    .frame(width: min(size.width * 0.76, 470), height: min(size.height * 0.56, 500))
+                    .position(x: size.width * 0.50, y: size.height * 0.58)
                     .onTapGesture {
                         withAnimation(.spring(response: 0.44, dampingFraction: 0.88)) {
                             bookshelfCloseUp = true
@@ -317,14 +338,8 @@ struct NookImmersiveRoomView: View {
             roomGlow(x: size.width * 0.60, y: size.height * 0.46, radius: 210)
 
             // Frontal room perspective: wall decor behind, table edge and legs facing the viewer.
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(CassetteColors.chrisflixDeepPurple.opacity(0.15))
+            podcastWallArt
                 .frame(width: min(size.width * 0.34, 190), height: 120)
-                .overlay {
-                    Image(systemName: "waveform")
-                        .font(.system(size: 48, weight: .light))
-                        .foregroundStyle(neonAccent.opacity(0.48))
-                }
                 .position(x: size.width * 0.73, y: size.height * 0.34)
 
             frontProfileTable
@@ -332,10 +347,10 @@ struct NookImmersiveRoomView: View {
                 .position(x: size.width * 0.50, y: size.height * 0.63)
 
             standingMicrophone
-                .position(x: size.width * 0.38, y: size.height * 0.48)
+                .position(x: size.width * 0.38, y: size.height * 0.515)
 
             coffeeMug
-                .position(x: size.width * 0.64, y: size.height * 0.53)
+                .position(x: size.width * 0.64, y: size.height * 0.535)
 
             podcastStatus
                 .frame(width: min(size.width - 60, 460))
@@ -357,49 +372,82 @@ struct NookImmersiveRoomView: View {
     }
 
     private var windowView: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        CassetteColors.chrisflixDeepPurple.opacity(afterDark ? 0.62 : 0.43),
-                        Color.black.opacity(0.92)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
+        ZStack {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(red: 0.20, green: 0.12, blue: 0.105))
+
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            CassetteColors.chrisflixDeepPurple.opacity(afterDark ? 0.68 : 0.48),
+                            Color.black.opacity(0.94)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 )
-            )
-            .overlay {
-                HStack(spacing: 18) {
-                    ForEach(0..<4, id: \.self) { _ in
-                        Capsule()
-                            .fill(.white.opacity(0.12))
-                            .frame(width: 2, height: 34)
-                            .rotationEffect(.degrees(18))
+                .padding(8)
+                .overlay {
+                    HStack(spacing: 18) {
+                        ForEach(0..<4, id: \.self) { _ in
+                            Capsule()
+                                .fill(Color.white.opacity(0.13))
+                                .frame(width: 2, height: 34)
+                                .rotationEffect(.degrees(18))
+                        }
                     }
                 }
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
-            }
+
+            Rectangle()
+                .fill(Color(red: 0.31, green: 0.18, blue: 0.14))
+                .frame(height: 10)
+                .offset(y: 48)
+        }
+        .shadow(color: .black.opacity(0.32), radius: 8, y: 5)
     }
 
-    private var wallShelf: some View {
-        VStack(spacing: 5) {
-            ForEach(0..<3, id: \.self) { row in
-                HStack(alignment: .bottom, spacing: 4) {
-                    ForEach(0..<5, id: \.self) { idx in
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill([
-                                Color.orange,
-                                CassetteColors.chrisflixPurple,
-                                Color(red: 0.41, green: 0.22, blue: 0.18)
-                            ][(row + idx) % 3].opacity(0.50))
-                            .frame(width: 7, height: CGFloat(19 + ((row + idx) % 3) * 8))
+    private var wallWeatherPanel: some View {
+        Button {
+            weather.refresh(force: true)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 7) {
+                    Image(systemName: weather.snapshot?.symbol ?? "location.fill")
+                        .foregroundStyle(neonAccent)
+                    if let snap = weather.snapshot {
+                        Text("\(snap.temperature)\(snap.unit)")
+                            .font(.headline.bold())
                     }
                 }
+
+                Text(weather.snapshot?.condition ?? weather.statusText)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.70))
             }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 11)
+            .frame(minWidth: 104, alignment: .leading)
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color.black.opacity(0.58),
+                        Color(red: 0.13, green: 0.075, blue: 0.085).opacity(0.92)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(neonAccent.opacity(0.24), lineWidth: 0.8)
+            }
+            .shadow(color: .black.opacity(0.28), radius: 6, y: 4)
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Refresh Nook weather")
     }
 
     private var fireplaceAssembly: some View {
@@ -627,6 +675,47 @@ struct NookImmersiveRoomView: View {
         }
     }
 
+    private var radioPresetConsole: some View {
+        VStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                .fill(Color(red: 0.31, green: 0.18, blue: 0.13))
+                .frame(height: 9)
+
+            radioPresetStrip
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.17, green: 0.10, blue: 0.09),
+                            Color.black.opacity(0.76)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+        }
+        .shadow(color: .black.opacity(0.34), radius: 8, y: 5)
+    }
+
+    private var podcastWallArt: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(red: 0.12, green: 0.07, blue: 0.13))
+
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(neonAccent.opacity(0.26), lineWidth: 1.2)
+                .padding(7)
+
+            Image(systemName: "waveform")
+                .font(.system(size: 48, weight: .light))
+                .foregroundStyle(neonAccent.opacity(0.64))
+                .shadow(color: neonAccent.opacity(0.22), radius: 10)
+        }
+        .shadow(color: .black.opacity(0.30), radius: 8, y: 5)
+    }
+
     private func radioSymbol(_ name: String) -> String {
         let n = name.lowercased()
         if n.contains("café") || n.contains("cafe") { return "cup.and.saucer.fill" }
@@ -735,23 +824,68 @@ struct NookImmersiveRoomView: View {
     private var frontProfileTable: some View {
         GeometryReader { geo in
             ZStack(alignment: .top) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(red: 0.27, green: 0.15, blue: 0.105))
-                    .frame(height: geo.size.height * 0.26)
-                    .shadow(color: .black.opacity(0.34), radius: 14, y: 9)
+                // Perspective top: narrower back edge, wider front edge.
+                Path { path in
+                    let w = geo.size.width
+                    let h = geo.size.height * 0.28
+                    path.move(to: CGPoint(x: w * 0.10, y: h * 0.14))
+                    path.addLine(to: CGPoint(x: w * 0.90, y: h * 0.14))
+                    path.addLine(to: CGPoint(x: w * 0.98, y: h))
+                    path.addLine(to: CGPoint(x: w * 0.02, y: h))
+                    path.closeSubpath()
+                }
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.38, green: 0.22, blue: 0.14),
+                            Color(red: 0.22, green: 0.12, blue: 0.085)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .shadow(color: .black.opacity(0.40), radius: 14, y: 10)
+
+                // Front apron gives the table thickness.
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color(red: 0.22, green: 0.12, blue: 0.085))
+                    .frame(width: geo.size.width * 0.91, height: geo.size.height * 0.11)
+                    .offset(y: geo.size.height * 0.23)
 
                 HStack {
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(red: 0.20, green: 0.11, blue: 0.08))
-                        .frame(width: 34)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.25, green: 0.14, blue: 0.095),
+                                    Color(red: 0.12, green: 0.065, blue: 0.055)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 38)
+                        .rotationEffect(.degrees(2))
+
                     Spacer()
+
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(red: 0.20, green: 0.11, blue: 0.08))
-                        .frame(width: 34)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.12, green: 0.065, blue: 0.055),
+                                    Color(red: 0.25, green: 0.14, blue: 0.095)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 38)
+                        .rotationEffect(.degrees(-2))
                 }
                 .padding(.horizontal, geo.size.width * 0.14)
-                .padding(.top, geo.size.height * 0.22)
-                .frame(height: geo.size.height * 0.92)
+                .padding(.top, geo.size.height * 0.29)
+                .frame(height: geo.size.height * 0.94)
             }
         }
     }
@@ -770,13 +904,28 @@ struct NookImmersiveRoomView: View {
             Capsule()
                 .fill(.white.opacity(0.40))
                 .frame(width: 62, height: 6)
+                .shadow(color: .black.opacity(0.44), radius: 5, y: 4)
         }
     }
 
     private var coffeeMug: some View {
         ZStack {
+            Ellipse()
+                .fill(Color.black.opacity(0.30))
+                .frame(width: 74, height: 16)
+                .offset(y: 24)
+
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(red: 0.83, green: 0.77, blue: 0.66))
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.92, green: 0.87, blue: 0.76),
+                            Color(red: 0.70, green: 0.62, blue: 0.50)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .frame(width: 54, height: 46)
 
             Circle()
